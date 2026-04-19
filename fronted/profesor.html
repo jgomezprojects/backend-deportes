@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel profesor — Deportes</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="body--profesor">
+    <div class="app">
+        <header class="header header--profesor">
+            <div class="header__brand">
+                <span class="header__logo" aria-hidden="true">◎</span>
+                <div>
+                    <p class="header__title">Panel Profesor</p>
+                    <p class="header__subtitle">Gestión deportiva universitaria</p>
+                </div>
+            </div>
+            <div class="header__user">
+                <span class="header__welcome">Hola <strong id="user-display-name">—</strong></span>
+                <button type="button" class="btn btn--ghost" id="btn-logout">Cerrar sesión</button>
+            </div>
+        </header>
+
+        <nav class="tabs" role="tablist" aria-label="Secciones del panel">
+            <button type="button" class="tabs__btn is-active" role="tab" aria-selected="true" data-tab="clases">Mis clases</button>
+            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="alumnos">Alumnos</button>
+            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="calificaciones">Calificaciones</button>
+        </nav>
+
+        <main class="main">
+            <p class="flash" id="flash-msg" hidden></p>
+
+            <section id="panel-clases" class="tab-panel is-active" role="tabpanel" data-panel="clases">
+                <h2 class="section-title">Mis clases</h2>
+                <p class="section-desc">Horarios donde figuras como instructor (<code>instructor_id</code>).</p>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Deporte</th>
+                                <th>Lugar</th>
+                                <th>Nivel</th>
+                                <th>Día</th>
+                                <th>Hora</th>
+                                <th>Cupos</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prof-tabla-clases-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="panel-alumnos" class="tab-panel" role="tabpanel" hidden data-panel="alumnos">
+                <h2 class="section-title">Alumnos</h2>
+                <p class="section-desc">Estudiantes inscritos en tus horarios.</p>
+                <div id="prof-lista-alumnos" class="list-block"></div>
+            </section>
+
+            <section id="panel-calificaciones" class="tab-panel" role="tabpanel" hidden data-panel="calificaciones">
+                <h2 class="section-title">Calificaciones</h2>
+                <p class="section-desc">Asigna o actualiza nota y comentario por alumno (se guarda en la tabla <code>ratings</code>).</p>
+                <div id="prof-lista-calificaciones" class="list-block list-block--calif"></div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>Conectado a API local · <span id="api-status">—</span></p>
+        </footer>
+    </div>
+
+    <script src="js/panel-utils.js"></script>
+    <script src="js/profesor.js"></script>
+</body>
+</html>

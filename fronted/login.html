@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesión — Deportes</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container login-card">
+        <h1>Deportes universidad</h1>
+        <h2>Iniciar sesión</h2>
+
+        <label class="field-label" for="nombre">Usuario</label>
+        <input id="nombre" type="text" placeholder="Tu nombre de usuario" autocomplete="username">
+
+        <label class="field-label" for="password">Contraseña</label>
+        <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password">
+
+        <fieldset class="role-fieldset">
+            <legend>Rol</legend>
+            <label class="role-option">
+                <input type="radio" name="role" value="1" checked>
+                Estudiante
+            </label>
+            <label class="role-option">
+                <input type="radio" name="role" value="2">
+                Profesor
+            </label>
+            <label class="role-option">
+                <input type="radio" name="role" value="3">
+                Administrador
+            </label>
+        </fieldset>
+
+        <button type="button" id="btn-login">Ingresar</button>
+        <p id="login-status" class="form-status" hidden></p>
+        <p class="stub-note">
+            ¿No tienes cuenta? <a href="register.html">Regístrate aquí</a>
+        </p>
+    </div>
+
+    <script src="js/login.js"></script>
+</body>
+</html>

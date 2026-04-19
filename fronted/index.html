@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deportes universidad</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container login-card stub-page">
+        <p class="stub-badge">Plataforma deportiva</p>
+        <h1>Bienvenido</h1>
+        <p class="stub-note">
+            Ingresa a tu cuenta o crea una nueva para reservar clases deportivas.
+        </p>
+        <button type="button" id="btn-go-login">Iniciar sesión</button>
+        <button type="button" id="btn-go-register">Crear cuenta</button>
+        <p class="stub-note">
+            Prueba rápida: registra un usuario, inicia sesión y valida en panel admin que aparece en usuarios.
+        </p>
+    </div>
+
+    <script>
+        function getRole() {
+            return localStorage.getItem("role_id") || localStorage.getItem("rol");
+        }
+
+        function redirectIfSessionExists() {
+            const userId = localStorage.getItem("user_id");
+            if (!userId) return;
+            const role = getRole();
+            if (role === "1") window.location.href = "estudiante.html";
+            else if (role === "2") window.location.href = "profesor.html";
+            else if (role === "3") window.location.href = "admin.html";
+        }
+
+        redirectIfSessionExists();
+
+        document.getElementById("btn-go-login").addEventListener("click", () => {
+            window.location.href = "login.html";
+        });
+        document.getElementById("btn-go-register").addEventListener("click", () => {
+            window.location.href = "register.html";
+        });
+    </script>
+</body>
+</html>
