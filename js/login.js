@@ -1,4 +1,4 @@
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://backend-deportes-production-0925.up.railway.app";
 const statusEl = document.getElementById("login-status");
 const submitBtn = document.getElementById("btn-login");
 
