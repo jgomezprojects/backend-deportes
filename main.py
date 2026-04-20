@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from typing import Any, List, Optional
 
 import psycopg2
@@ -95,6 +96,373 @@ def _resolve_users_mapping(conn) -> dict:
             f"La tabla {users_table} no tiene columnas de identidad (nombre/username/name/email/correo)."
         )
     return mapping
+
+
+def _pick_existing_table(cursor, candidates: List[str]) -> Optional[str]:
+    if not candidates:
+        return None
+    cursor.execute(
+        """
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_type = 'BASE TABLE'
+          AND table_name = ANY(%s)
+        ORDER BY array_position(%s::text[], table_name)
+        LIMIT 1
+        """,
+        (candidates, candidates),
+    )
+    row = cursor.fetchone()
+    return row[0] if row else None
+
+
+def _resolve_notifications_mapping(cursor) -> Optional[dict]:
+    table = _pick_existing_table(
+        cursor,
+        ["notifications", "notification", "notificaciones", "notificacion"],
+    )
+    if not table:
+        return None
+    return {
+        "table": table,
+        "user_id": _find_first_existing(
+            cursor, table, ["user_id", "recipient_id", "usuario_id", "receiver_id"]
+        ),
+        "title": _find_first_existing(cursor, table, ["title", "subject", "titulo"]),
+        "message": _find_first_existing(
+            cursor, table, ["message", "body", "content", "mensaje", "text"]
+        ),
+        "type": _find_first_existing(cursor, table, ["type", "tipo", "category"]),
+        "is_read": _find_first_existing(cursor, table, ["is_read", "read", "leido", "seen"]),
+        "created_at": _find_first_existing(
+            cursor, table, ["created_at", "created", "fecha", "timestamp"]
+        ),
+    }
+
+
+def _resolve_enrollment_history_mapping(cursor) -> Optional[dict]:
+    table = _pick_existing_table(
+        cursor,
+        [
+            "enrollments_history",
+            "enrollment_history",
+            "enrollments",
+            "enrollment",
+            "enrollment_histories",
+            "matricula_historial",
+            "historial_matricula",
+        ],
+    )
+    if not table:
+        return None
+    return {
+        "table": table,
+        "user_id": _find_first_existing(cursor, table, ["user_id", "student_id", "usuario_id"]),
+        "schedule_id": _find_first_existing(cursor, table, ["schedule_id", "class_id", "horario_id"]),
+        "sport_id": _find_first_existing(cursor, table, ["sport_id", "deporte_id"]),
+        "reservation_id": _find_first_existing(
+            cursor, table, ["reservation_id", "reserva_id", "booking_id"]
+        ),
+        "action": _find_first_existing(
+            cursor,
+            table,
+            ["action", "event", "tipo_evento", "change_type", "tipo", "status", "estado"],
+        ),
+        "notes": _find_first_existing(cursor, table, ["notes", "note", "detalle", "description"]),
+        "event_date": _find_first_existing(
+            cursor, table, ["date", "event_date", "occurred_on", "dia"]
+        ),
+        "created_at": _find_first_existing(
+            cursor, table, ["created_at", "created", "timestamp"]
+        ),
+    }
+
+
+def _resolve_attendance_mapping(cursor) -> Optional[dict]:
+    table = _pick_existing_table(
+        cursor,
+        ["attendance", "asistencias", "class_attendance", "student_attendance"],
+    )
+    if not table:
+        return None
+    return {
+        "table": table,
+        "reservation_id": _find_first_existing(
+            cursor, table, ["reservation_id", "reserva_id", "booking_id"]
+        ),
+        "user_id": _find_first_existing(cursor, table, ["user_id", "student_id", "usuario_id"]),
+        "schedule_id": _find_first_existing(cursor, table, ["schedule_id", "class_id", "horario_id"]),
+        "status": _find_first_existing(
+            cursor, table, ["status", "estado", "present", "asistio", "attendance_status"]
+        ),
+        "marked_by": _find_first_existing(
+            cursor, table, ["marked_by", "instructor_id", "professor_id", "registrado_por"]
+        ),
+        "notes": _find_first_existing(cursor, table, ["notes", "note", "comentario", "observacion"]),
+        "created_at": _find_first_existing(
+            cursor, table, ["created_at", "created", "fecha", "timestamp"]
+        ),
+    }
+
+
+def _insert_mapped_row(cursor, table: str, col_values: dict) -> None:
+    cols = [c for c, v in col_values.items() if c is not None and v is not None]
+    if not cols:
+        raise Exception("No hay columnas para insertar")
+    vals = [col_values[c] for c in cols]
+    stmt = sql.SQL("INSERT INTO {tbl} ({fields}) VALUES ({placeholders})").format(
+        tbl=sql.Identifier(table),
+        fields=sql.SQL(", ").join(sql.Identifier(c) for c in cols),
+        placeholders=sql.SQL(", ").join(sql.SQL("%s") for _ in cols),
+    )
+    cursor.execute(stmt, tuple(vals))
+
+
+def _pg_column_type(cursor, table: str, column: str) -> Optional[tuple]:
+    cursor.execute(
+        """
+        SELECT data_type, udt_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = %s
+          AND column_name = %s
+        """,
+        (table, column),
+    )
+    row = cursor.fetchone()
+    if not row:
+        return None
+    return (str(row[0]).lower(), str(row[1] or "").lower())
+
+
+def _try_log_enrollment(
+    cursor,
+    *,
+    user_id: int,
+    schedule_id: int,
+    reservation_id: Optional[int],
+    action: str,
+    notes: Optional[str] = None,
+    sport_id: Optional[int] = None,
+) -> None:
+    mapping = _resolve_enrollment_history_mapping(cursor)
+    if not mapping or not mapping["table"]:
+        return
+    act = (action or "").strip()
+    if not act:
+        return
+
+    payload: dict = {}
+    if mapping.get("action"):
+        payload[mapping["action"]] = act
+    elif mapping.get("notes"):
+        payload[mapping["notes"]] = f"[{act}] {notes or ''}".strip()
+    else:
+        return
+
+    if mapping.get("user_id"):
+        payload[mapping["user_id"]] = user_id
+    if mapping.get("schedule_id"):
+        payload[mapping["schedule_id"]] = schedule_id
+    if sport_id is not None and mapping.get("sport_id"):
+        payload[mapping["sport_id"]] = sport_id
+    if reservation_id is not None and mapping.get("reservation_id"):
+        payload[mapping["reservation_id"]] = reservation_id
+    if notes and mapping.get("notes") and mapping.get("action"):
+        payload[mapping["notes"]] = notes
+    if mapping.get("event_date"):
+        ed = mapping["event_date"]
+        info = _pg_column_type(cursor, mapping["table"], ed)
+        if info and info[0] in ("timestamp without time zone", "timestamp with time zone"):
+            payload[ed] = datetime.now()
+        elif info and info[0] == "date":
+            payload[ed] = datetime.now().date()
+        else:
+            payload[ed] = datetime.now().date()
+    if mapping.get("created_at") and mapping["created_at"] not in payload:
+        ca = mapping["created_at"]
+        if ca != mapping.get("event_date"):
+            info = _pg_column_type(cursor, mapping["table"], ca)
+            if info and info[0] in ("timestamp without time zone", "timestamp with time zone"):
+                payload[ca] = datetime.now()
+            elif info and info[0] == "date":
+                payload[ca] = datetime.now().date()
+    _insert_mapped_row(cursor, mapping["table"], payload)
+
+
+def _try_create_notification(
+    cursor,
+    *,
+    user_id: int,
+    title: str,
+    message: str,
+    notif_type: Optional[str] = None,
+) -> None:
+    mapping = _resolve_notifications_mapping(cursor)
+    if not mapping or not mapping["table"]:
+        return
+    if not mapping.get("user_id") or not (mapping.get("title") or mapping.get("message")):
+        return
+    payload: dict = {}
+    payload[mapping["user_id"]] = user_id
+    if mapping.get("title"):
+        payload[mapping["title"]] = title
+    if mapping.get("message"):
+        payload[mapping["message"]] = message
+    if notif_type and mapping.get("type"):
+        payload[mapping["type"]] = notif_type
+    if mapping.get("is_read") is not None:
+        payload[mapping["is_read"]] = False
+    _insert_mapped_row(cursor, mapping["table"], payload)
+
+
+def _try_log_attendance_row(
+    cursor,
+    *,
+    reservation_id: int,
+    student_user_id: int,
+    schedule_id: int,
+    status: str,
+    instructor_user_id: Optional[int] = None,
+    notes: Optional[str] = None,
+) -> None:
+    mapping = _resolve_attendance_mapping(cursor)
+    if not mapping or not mapping["table"]:
+        return
+    if not mapping.get("reservation_id") and not mapping.get("user_id"):
+        return
+    if not mapping.get("status"):
+        return
+    payload: dict = {}
+    if mapping.get("reservation_id"):
+        payload[mapping["reservation_id"]] = reservation_id
+    if mapping.get("user_id"):
+        payload[mapping["user_id"]] = student_user_id
+    if mapping.get("schedule_id"):
+        payload[mapping["schedule_id"]] = schedule_id
+    payload[mapping["status"]] = status
+    if instructor_user_id is not None and mapping.get("marked_by"):
+        payload[mapping["marked_by"]] = instructor_user_id
+    if notes and mapping.get("notes"):
+        payload[mapping["notes"]] = notes
+    _insert_mapped_row(cursor, mapping["table"], payload)
+
+
+def _coerce_attendance_status_for_db(
+    cursor, table: str, status_column: str, logical: str
+) -> Any:
+    """logical: PRESENT | ABSENT (mayúsculas)."""
+    logical = (logical or "").strip().upper()
+    if logical not in ("PRESENT", "ABSENT"):
+        logical = "ABSENT"
+    info = _pg_column_type(cursor, table, status_column)
+    if not info:
+        return "PRESENT" if logical == "PRESENT" else "ABSENT"
+    data_type, udt_name = info
+    if data_type == "boolean" or udt_name == "bool":
+        return logical == "PRESENT"
+    if data_type in ("smallint", "integer", "bigint"):
+        return 1 if logical == "PRESENT" else 0
+    return "PRESENT" if logical == "PRESENT" else "ABSENT"
+
+
+def _normalize_attendance_status_display(raw: Any) -> Optional[str]:
+    if raw is None:
+        return None
+    if isinstance(raw, bool):
+        return "PRESENT" if raw else "ABSENT"
+    if isinstance(raw, (int, float)):
+        return "PRESENT" if raw else "ABSENT"
+    s = str(raw).strip().upper()
+    if s in ("PRESENT", "ABSENT", "1", "0", "T", "F", "TRUE", "FALSE"):
+        if s in ("PRESENT", "1", "T", "TRUE"):
+            return "PRESENT"
+        if s in ("ABSENT", "0", "F", "FALSE"):
+            return "ABSENT"
+    return s or None
+
+
+def upsert_attendance_for_reservation(
+    cursor,
+    *,
+    reservation_id: int,
+    student_user_id: int,
+    schedule_id: int,
+    logical_status: str,
+    instructor_user_id: int,
+    notes: Optional[str] = None,
+) -> None:
+    """
+    Inserta o actualiza una fila de asistencia (presente/ausente) para una reserva.
+    """
+    mapping = _resolve_attendance_mapping(cursor)
+    if not mapping or not mapping["table"]:
+        raise Exception(
+            "No se encontró tabla attendance (attendance/asistencias/…). "
+            "Crea la tabla en Neon (ver sql/attendance.sql)."
+        )
+    if not mapping.get("status"):
+        raise Exception(
+            "La tabla de asistencia necesita columna status, estado, present, asistio o attendance_status."
+        )
+    if not mapping.get("reservation_id") and not (
+        mapping.get("user_id") and mapping.get("schedule_id")
+    ):
+        raise Exception(
+            "La tabla de asistencia necesita reservation_id (o reserva_id) "
+            "o bien el par user_id + schedule_id para enlazar la reserva."
+        )
+
+    tbl = mapping["table"]
+    st_col = mapping["status"]
+    db_val = _coerce_attendance_status_for_db(cursor, tbl, st_col, logical_status)
+
+    set_fragments: List[Any] = [
+        sql.SQL("{} = %s").format(sql.Identifier(st_col)),
+    ]
+    params: List[Any] = [db_val]
+    if mapping.get("marked_by"):
+        set_fragments.append(sql.SQL("{} = %s").format(sql.Identifier(mapping["marked_by"])))
+        params.append(instructor_user_id)
+    if notes is not None and mapping.get("notes"):
+        set_fragments.append(sql.SQL("{} = %s").format(sql.Identifier(mapping["notes"])))
+        params.append(notes)
+
+    if mapping.get("reservation_id"):
+        res_c = mapping["reservation_id"]
+        where_sql = sql.SQL("WHERE {} = %s").format(sql.Identifier(res_c))
+        params.append(reservation_id)
+    else:
+        u_c, s_c = mapping["user_id"], mapping["schedule_id"]
+        where_sql = sql.SQL("WHERE {} = %s AND {} = %s").format(
+            sql.Identifier(u_c),
+            sql.Identifier(s_c),
+        )
+        params.extend([student_user_id, schedule_id])
+
+    upd = sql.SQL("UPDATE {tbl} SET {sets} {where}").format(
+        tbl=sql.Identifier(tbl),
+        sets=sql.SQL(", ").join(set_fragments),
+        where=where_sql,
+    )
+    cursor.execute(upd, tuple(params))
+    if cursor.rowcount and cursor.rowcount > 0:
+        return
+
+    insert_payload: dict = {}
+    if mapping.get("reservation_id"):
+        insert_payload[mapping["reservation_id"]] = reservation_id
+    if mapping.get("user_id"):
+        insert_payload[mapping["user_id"]] = student_user_id
+    if mapping.get("schedule_id"):
+        insert_payload[mapping["schedule_id"]] = schedule_id
+    insert_payload[st_col] = db_val
+    if mapping.get("marked_by"):
+        insert_payload[mapping["marked_by"]] = instructor_user_id
+    if notes is not None and mapping.get("notes"):
+        insert_payload[mapping["notes"]] = notes
+    _insert_mapped_row(cursor, tbl, insert_payload)
 
 
 class LoginRequest(BaseModel):
@@ -310,6 +678,55 @@ def list_usuarios():
     ]
 
 
+@app.delete("/usuarios/{user_id}")
+def delete_usuario(user_id: int):
+    """Elimina usuario y datos relacionados para dejar la BD consistente."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        users = _resolve_users_mapping(conn)
+
+        # Limpiar dependencias directas/indirectas sin depender de cascadas.
+        cur.execute("DELETE FROM students WHERE user_id = %s", (user_id,))
+        cur.execute(
+            """
+            DELETE FROM ratings
+            WHERE reservation_id IN (
+                SELECT id FROM reservations WHERE user_id = %s
+            )
+            """,
+            (user_id,),
+        )
+        cur.execute("DELETE FROM reservations WHERE user_id = %s", (user_id,))
+        cur.execute(
+            "UPDATE schedules SET instructor_id = NULL WHERE instructor_id = %s",
+            (user_id,),
+        )
+        cur.execute(
+            sql.SQL("DELETE FROM {users_table} WHERE {id_col} = %s").format(
+                users_table=sql.Identifier(users["table"]),
+                id_col=sql.Identifier(users["id"]),
+            ),
+            (user_id,),
+        )
+        if cur.rowcount == 0:
+            cur.close()
+            conn.close()
+            return {"error": "Usuario no encontrado"}
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"mensaje": "Usuario eliminado"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.delete("/users/{user_id}")
+def delete_user_alias(user_id: int):
+    return delete_usuario(user_id)
+
+
 @app.get("/profesores")
 def list_profesores():
     """Usuarios con rol profesor."""
@@ -419,6 +836,35 @@ class ScheduleCreate(BaseModel):
     instructor_id: Optional[int] = None
 
 
+def _parse_hour_range(hour_value: str) -> Optional[tuple]:
+    """Acepta 'HH:MM-HH:MM' y devuelve minutos inicio/fin."""
+    if not hour_value or "-" not in hour_value:
+        return None
+    raw_start, raw_end = hour_value.split("-", 1)
+    start_txt = raw_start.strip()
+    end_txt = raw_end.strip()
+    try:
+        start_dt = datetime.strptime(start_txt, "%H:%M")
+        end_dt = datetime.strptime(end_txt, "%H:%M")
+    except ValueError:
+        return None
+    start_min = start_dt.hour * 60 + start_dt.minute
+    end_min = end_dt.hour * 60 + end_dt.minute
+    if end_min <= start_min:
+        return None
+    return start_min, end_min
+
+
+def _format_hour_range(hour_value: str) -> Optional[str]:
+    parsed = _parse_hour_range(hour_value)
+    if not parsed:
+        return None
+    start_min, end_min = parsed
+    start_txt = f"{start_min // 60:02d}:{start_min % 60:02d}"
+    end_txt = f"{end_min // 60:02d}:{end_min % 60:02d}"
+    return f"{start_txt}-{end_txt}"
+
+
 @app.get("/sports")
 def list_sports():
     try:
@@ -468,6 +914,12 @@ def create_schedule(body: ScheduleCreate):
             return {"error": "La capacidad debe ser mayor que 0"}
         if not body.day.strip() or not body.hour.strip():
             return {"error": "Indica día y hora"}
+        normalized_hour = _format_hour_range(body.hour)
+        if not normalized_hour:
+            return {
+                "error": "Formato de hora inválido. Usa rango HH:MM-HH:MM, por ejemplo 18:00-19:30.",
+            }
+        new_start_min, new_end_min = _parse_hour_range(normalized_hour)
 
         conn = get_connection()
         cur = conn.cursor()
@@ -507,6 +959,32 @@ def create_schedule(body: ScheduleCreate):
 
         cur.execute(
             """
+            SELECT id, hour
+            FROM schedules
+            WHERE location_id = %s
+              AND LOWER(TRIM(day)) = LOWER(TRIM(%s))
+            """,
+            (body.location_id, body.day.strip()),
+        )
+        existing_rows = cur.fetchall()
+        for row in existing_rows:
+            existing_hour = row[1]
+            existing_range = _parse_hour_range(existing_hour) if existing_hour else None
+            if not existing_range:
+                continue
+            existing_start_min, existing_end_min = existing_range
+            has_overlap = (
+                new_start_min < existing_end_min and new_end_min > existing_start_min
+            )
+            if has_overlap:
+                cur.close()
+                conn.close()
+                return {
+                    "error": "Ya existe un horario en ese lugar y día que se cruza con el rango indicado.",
+                }
+
+        cur.execute(
+            """
             INSERT INTO schedules (sport_id, location_id, level_id, day, hour, capacity, instructor_id)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING id
@@ -516,7 +994,7 @@ def create_schedule(body: ScheduleCreate):
                 body.location_id,
                 body.level_id,
                 body.day.strip(),
-                body.hour.strip(),
+                normalized_hour,
                 body.capacity,
                 body.instructor_id,
             ),
@@ -577,6 +1055,31 @@ def patch_schedule_instructor(schedule_id: int, body: InstructorUpdate):
         return {"error": str(e)}
 
 
+@app.delete("/schedules/{schedule_id}")
+def delete_schedule(schedule_id: int):
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute(
+            "DELETE FROM ratings WHERE reservation_id IN (SELECT id FROM reservations WHERE schedule_id = %s)",
+            (schedule_id,),
+        )
+        cur.execute("DELETE FROM reservations WHERE schedule_id = %s", (schedule_id,))
+        cur.execute("DELETE FROM schedules WHERE id = %s", (schedule_id,))
+        if cur.rowcount == 0:
+            cur.close()
+            conn.close()
+            return {"error": "Horario no encontrado"}
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"mensaje": "Horario eliminado"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 class Reserva(BaseModel):
     user_id: int
     schedule_id: int
@@ -613,16 +1116,448 @@ def crear_reserva(reserva: Reserva):
             return {"error": "No hay cupos disponibles"}
 
         cursor.execute(
-            "INSERT INTO reservations (user_id, schedule_id) VALUES (%s, %s)",
+            "INSERT INTO reservations (user_id, schedule_id) VALUES (%s, %s) RETURNING id",
             (reserva.user_id, reserva.schedule_id),
         )
+        new_reservation_id = cursor.fetchone()[0]
+
+        cursor.execute(
+            "SELECT sport_id FROM schedules WHERE id = %s",
+            (reserva.schedule_id,),
+        )
+        sport_row = cursor.fetchone()
+        sport_oid = sport_row[0] if sport_row else None
+
+        try:
+            _try_log_enrollment(
+                cursor,
+                user_id=reserva.user_id,
+                schedule_id=reserva.schedule_id,
+                reservation_id=new_reservation_id,
+                action="ENROLLED",
+                notes="Inscripción creada desde API",
+                sport_id=sport_oid,
+            )
+            _try_create_notification(
+                cursor,
+                user_id=reserva.user_id,
+                title="Inscripción confirmada",
+                message=f"Te inscribiste al horario ID {reserva.schedule_id}.",
+                notif_type="RESERVATION",
+            )
+        except Exception:
+            pass
 
         conn.commit()
         cursor.close()
         conn.close()
 
-        return {"mensaje": "Inscripción exitosa"}
+        return {"mensaje": "Inscripción exitosa", "reservation_id": new_reservation_id}
 
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.delete("/reservas/{reserva_id}")
+def delete_reserva(reserva_id: int):
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT r.user_id, r.schedule_id, s.sport_id
+            FROM reservations r
+            JOIN schedules s ON r.schedule_id = s.id
+            WHERE r.id = %s
+            """,
+            (reserva_id,),
+        )
+        res_row = cur.fetchone()
+        if not res_row:
+            cur.close()
+            conn.close()
+            return {"error": "Reserva no encontrada"}
+
+        student_uid, sched_id, sport_oid = res_row[0], res_row[1], res_row[2]
+        try:
+            _try_log_enrollment(
+                cur,
+                user_id=student_uid,
+                schedule_id=sched_id,
+                reservation_id=reserva_id,
+                action="UNENROLLED",
+                notes="Reserva eliminada",
+                sport_id=sport_oid,
+            )
+        except Exception:
+            pass
+
+        att = _resolve_attendance_mapping(cur)
+        if att and att.get("table") and att.get("reservation_id"):
+            cur.execute(
+                sql.SQL("DELETE FROM {tbl} WHERE {rc} = %s").format(
+                    tbl=sql.Identifier(att["table"]),
+                    rc=sql.Identifier(att["reservation_id"]),
+                ),
+                (reserva_id,),
+            )
+        cur.execute("DELETE FROM ratings WHERE reservation_id = %s", (reserva_id,))
+        cur.execute("DELETE FROM reservations WHERE id = %s", (reserva_id,))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"mensaje": "Reserva eliminada"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/enrollment-history")
+def listar_historial_matricula(
+    user_id: Optional[int] = None,
+    instructor_id: Optional[int] = None,
+    schedule_id: Optional[int] = None,
+    limit: int = 200,
+) -> Any:
+    """Historial de matrícula (tabla enrollments_history / enrollment_history / …)."""
+    lim = max(1, min(limit, 500))
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        mcur = conn.cursor()
+        mapping = _resolve_enrollment_history_mapping(mcur)
+        if not mapping:
+            mcur.close()
+            cur.close()
+            conn.close()
+            return []
+
+        tbl = mapping["table"]
+        users = _resolve_users_mapping(conn)
+        display_col = users["nombre"] or users["email"]
+        uid_col = mapping.get("user_id")
+        sch_col = mapping.get("schedule_id")
+        res_col = mapping.get("reservation_id")
+        sport_col = mapping.get("sport_id")
+
+        joins: List[Any] = []
+        wheres: List[Any] = []
+        params: List[Any] = []
+
+        if sport_col:
+            joins.append(
+                sql.SQL("LEFT JOIN sports sp ON sp.id = eh.{sc}").format(
+                    sc=sql.Identifier(sport_col)
+                )
+            )
+        if uid_col:
+            joins.append(
+                sql.SQL("LEFT JOIN {ut} u ON u.{uid} = eh.{euid}").format(
+                    ut=sql.Identifier(users["table"]),
+                    uid=sql.Identifier(users["id"]),
+                    euid=sql.Identifier(uid_col),
+                )
+            )
+
+        if user_id is not None and uid_col:
+            wheres.append(sql.SQL("eh.{c} = %s").format(c=sql.Identifier(uid_col)))
+            params.append(user_id)
+
+        if schedule_id is not None and sch_col:
+            wheres.append(sql.SQL("eh.{c} = %s").format(c=sql.Identifier(sch_col)))
+            params.append(schedule_id)
+
+        if instructor_id is not None:
+            if res_col:
+                joins.append(
+                    sql.SQL(
+                        "LEFT JOIN reservations r_ins ON r_ins.id = eh.{rc} "
+                        "LEFT JOIN schedules s_ins ON s_ins.id = r_ins.schedule_id"
+                    ).format(rc=sql.Identifier(res_col))
+                )
+                wheres.append(sql.SQL("s_ins.instructor_id = %s"))
+                params.append(instructor_id)
+            elif sch_col:
+                joins.append(
+                    sql.SQL("LEFT JOIN schedules s_ins ON s_ins.id = eh.{sch}").format(
+                        sch=sql.Identifier(sch_col)
+                    )
+                )
+                wheres.append(sql.SQL("s_ins.instructor_id = %s"))
+                params.append(instructor_id)
+            else:
+                mcur.close()
+                cur.close()
+                conn.close()
+                return {
+                    "error": "No se puede filtrar por instructor_id: la tabla no tiene "
+                    "reservation_id ni schedule_id.",
+                }
+
+        order_col = _find_first_existing(mcur, tbl, ["id", "date", "created_at", "created", "timestamp"])
+        mcur.close()
+
+        sel_extra = sql.SQL(", sp.name AS sport_name") if sport_col else sql.SQL("")
+        student_lbl = (
+            sql.SQL(", u.{dc} AS student_label").format(dc=sql.Identifier(display_col))
+            if uid_col
+            else sql.SQL("")
+        )
+        join_sql = sql.SQL(" ").join(joins) if joins else sql.SQL("")
+        where_sql = (
+            sql.SQL("WHERE ") + sql.SQL(" AND ").join(wheres)
+            if wheres
+            else sql.SQL("")
+        )
+        oc = sql.Identifier(order_col) if order_col else sql.Identifier("id")
+
+        stmt = sql.SQL(
+            "SELECT eh.* {sport_nm} {stu} FROM {eh} AS eh {j} {w} ORDER BY eh.{oc} DESC NULLS LAST LIMIT %s"
+        ).format(
+            sport_nm=sel_extra,
+            stu=student_lbl,
+            eh=sql.Identifier(tbl),
+            j=join_sql,
+            w=where_sql,
+            oc=oc,
+        )
+        params.append(lim)
+        cur.execute(stmt, tuple(params))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return [dict(r) for r in rows]
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def _attach_attendance_to_reservation_rows(
+    cursor,
+    rows: List[dict],
+    mapping: Optional[dict],
+) -> None:
+    """Añade clave attendance_status (PRESENT|ABSENT|None) a cada fila dict."""
+    if not rows:
+        return
+    if not mapping or not mapping.get("table") or not mapping.get("status"):
+        for r in rows:
+            r["attendance_status"] = None
+        return
+
+    tbl = mapping["table"]
+    scol = mapping["status"]
+
+    if mapping.get("reservation_id"):
+        rcol = mapping["reservation_id"]
+        ids = [r["reservation_id"] for r in rows if r.get("reservation_id") is not None]
+        if not ids:
+            for r in rows:
+                r["attendance_status"] = None
+            return
+        id_col = _find_first_existing(cursor, tbl, ["id"])
+        if id_col:
+            stmt = sql.SQL(
+                "SELECT {rc}, {sc}, {ic} FROM {tbl} WHERE {rc} IN ({ph})"
+            ).format(
+                rc=sql.Identifier(rcol),
+                sc=sql.Identifier(scol),
+                ic=sql.Identifier(id_col),
+                tbl=sql.Identifier(tbl),
+                ph=sql.SQL(", ").join(sql.SQL("%s") for _ in ids),
+            )
+        else:
+            stmt = sql.SQL("SELECT {rc}, {sc} FROM {tbl} WHERE {rc} IN ({ph})").format(
+                rc=sql.Identifier(rcol),
+                sc=sql.Identifier(scol),
+                tbl=sql.Identifier(tbl),
+                ph=sql.SQL(", ").join(sql.SQL("%s") for _ in ids),
+            )
+        cursor.execute(stmt, tuple(ids))
+        fetched = cursor.fetchall()
+        status_by_rid: dict = {}
+        if id_col:
+            best: dict = {}
+            for tup in fetched:
+                rid, st, iid = tup[0], tup[1], tup[2]
+                if rid not in best:
+                    best[rid] = (st, iid)
+                else:
+                    _old_st, old_iid = best[rid]
+                    if iid is not None and (old_iid is None or iid > old_iid):
+                        best[rid] = (st, iid)
+            for rid, pair in best.items():
+                status_by_rid[rid] = pair[0]
+        else:
+            for tup in fetched:
+                rid, st = tup[0], tup[1]
+                status_by_rid[rid] = st
+        for r in rows:
+            raw = status_by_rid.get(r.get("reservation_id"))
+            r["attendance_status"] = _normalize_attendance_status_display(raw)
+        return
+
+    if mapping.get("user_id") and mapping.get("schedule_id"):
+        uc, schc = mapping["user_id"], mapping["schedule_id"]
+        sids = list({r["schedule_id"] for r in rows if r.get("schedule_id") is not None})
+        if not sids:
+            for r in rows:
+                r["attendance_status"] = None
+            return
+        id_col = _find_first_existing(cursor, tbl, ["id"])
+        if id_col:
+            stmt = sql.SQL(
+                "SELECT {u}, {sch}, {sc}, {ic} FROM {tbl} WHERE {sch} IN ({ph})"
+            ).format(
+                u=sql.Identifier(uc),
+                sch=sql.Identifier(schc),
+                sc=sql.Identifier(scol),
+                ic=sql.Identifier(id_col),
+                tbl=sql.Identifier(tbl),
+                ph=sql.SQL(", ").join(sql.SQL("%s") for _ in sids),
+            )
+        else:
+            stmt = sql.SQL(
+                "SELECT {u}, {sch}, {sc} FROM {tbl} WHERE {sch} IN ({ph})"
+            ).format(
+                u=sql.Identifier(uc),
+                sch=sql.Identifier(schc),
+                sc=sql.Identifier(scol),
+                tbl=sql.Identifier(tbl),
+                ph=sql.SQL(", ").join(sql.SQL("%s") for _ in sids),
+            )
+        cursor.execute(stmt, tuple(sids))
+        fetched = cursor.fetchall()
+        status_by_pair: dict = {}
+        if id_col:
+            bestp: dict = {}
+            for tup in fetched:
+                u_i, s_i, st, iid = tup[0], tup[1], tup[2], tup[3]
+                key = (u_i, s_i)
+                if key not in bestp:
+                    bestp[key] = (st, iid)
+                else:
+                    _old_st, old_iid = bestp[key]
+                    if iid is not None and (old_iid is None or iid > old_iid):
+                        bestp[key] = (st, iid)
+            for key, pair in bestp.items():
+                status_by_pair[key] = pair[0]
+        else:
+            for tup in fetched:
+                key = (tup[0], tup[1])
+                status_by_pair[key] = tup[2]
+        for r in rows:
+            key = (r.get("user_id"), r.get("schedule_id"))
+            raw = status_by_pair.get(key)
+            r["attendance_status"] = _normalize_attendance_status_display(raw)
+        return
+
+    for r in rows:
+        r["attendance_status"] = None
+
+
+class MarcarAsistenciaBody(BaseModel):
+    reservation_id: int
+    instructor_user_id: int
+    status: str
+    notes: Optional[str] = None
+
+
+@app.get("/attendance")
+def listar_asistencia_profesor(instructor_id: int) -> Any:
+    """Lista inscripciones del profesor con última asistencia registrada (PRESENT/ABSENT)."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        users = _resolve_users_mapping(conn)
+        display_col = users["nombre"] or users["email"]
+
+        cur.execute(
+            sql.SQL(
+                """
+                SELECT
+                    r.id AS reservation_id,
+                    r.user_id,
+                    r.schedule_id,
+                    u.{display_col} AS estudiante_nombre,
+                    sp.name AS deporte,
+                    s.day,
+                    s.hour
+                FROM reservations r
+                JOIN {users_table} u ON r.user_id = u.{id_col}
+                JOIN schedules s ON r.schedule_id = s.id
+                JOIN sports sp ON s.sport_id = sp.id
+                WHERE s.instructor_id = %s
+                ORDER BY s.day, s.hour, u.{display_col};
+                """
+            ).format(
+                display_col=sql.Identifier(display_col),
+                users_table=sql.Identifier(users["table"]),
+                id_col=sql.Identifier(users["id"]),
+            ),
+            (instructor_id,),
+        )
+        rows_raw = cur.fetchall()
+        rows = [dict(r) for r in rows_raw]
+        mcur = conn.cursor()
+        mapping = _resolve_attendance_mapping(mcur)
+        _attach_attendance_to_reservation_rows(mcur, rows, mapping)
+        mcur.close()
+        cur.close()
+        conn.close()
+        return rows
+    except Exception as e:
+        err = str(e).lower()
+        if "instructor_id" in err:
+            return {
+                "error": "Falta schedules.instructor_id o JOIN. Revisa sql/schedules_instructor.sql.",
+            }
+        return {"error": str(e)}
+
+
+@app.post("/attendance")
+def marcar_asistencia(body: MarcarAsistenciaBody) -> Any:
+    """Profesor: marca presente o ausente para una reserva (tabla attendance)."""
+    logical = (body.status or "").strip().upper()
+    if logical not in ("PRESENT", "ABSENT"):
+        return {"error": 'status debe ser "PRESENT" o "ABSENT"'}
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT r.user_id, r.schedule_id, s.instructor_id
+            FROM reservations r
+            JOIN schedules s ON r.schedule_id = s.id
+            WHERE r.id = %s
+            """,
+            (body.reservation_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            cur.close()
+            conn.close()
+            return {"error": "Reserva no encontrada"}
+
+        student_user_id, schedule_id, schedule_instructor_id = row[0], row[1], row[2]
+        if schedule_instructor_id != body.instructor_user_id:
+            cur.close()
+            conn.close()
+            return {"error": "No puedes modificar asistencia de esta reserva"}
+
+        upsert_attendance_for_reservation(
+            cur,
+            reservation_id=body.reservation_id,
+            student_user_id=student_user_id,
+            schedule_id=schedule_id,
+            logical_status=logical,
+            instructor_user_id=body.instructor_user_id,
+            notes=body.notes,
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"mensaje": "Asistencia guardada", "status": logical}
     except Exception as e:
         return {"error": str(e)}
 
@@ -719,7 +1654,7 @@ def listar_calificaciones(
         if user_id is not None:
             cur.execute(
                 sql.SQL(
-                    """
+                """
                 SELECT
                     r.id AS reservation_id,
                     sp.name AS deporte,
@@ -747,7 +1682,7 @@ def listar_calificaciones(
         else:
             cur.execute(
                 sql.SQL(
-                    """
+                """
                 SELECT
                     r.id AS reservation_id,
                     u.{display_col} AS estudiante_nombre,
@@ -816,7 +1751,7 @@ def crear_o_actualizar_calificacion(body: CalificacionUpsert):
 
         cur.execute(
             """
-            SELECT s.instructor_id
+            SELECT r.user_id, r.schedule_id, s.instructor_id, s.sport_id
             FROM reservations r
             JOIN schedules s ON r.schedule_id = s.id
             WHERE r.id = %s
@@ -829,7 +1764,14 @@ def crear_o_actualizar_calificacion(body: CalificacionUpsert):
             conn.close()
             return {"error": "Reserva no encontrada"}
 
-        if row[0] != body.instructor_user_id:
+        student_user_id, schedule_id, schedule_instructor_id, sport_id = (
+            row[0],
+            row[1],
+            row[2],
+            row[3],
+        )
+
+        if schedule_instructor_id != body.instructor_user_id:
             cur.close()
             conn.close()
             return {"error": "No puedes calificar esta reserva"}
@@ -844,19 +1786,39 @@ def crear_o_actualizar_calificacion(body: CalificacionUpsert):
             cur.execute(
                 """
                 UPDATE ratings
-                SET rating = %s, comment = %s
+                SET rating = %s, comment = %s, user_id = %s, sport_id = %s
                 WHERE reservation_id = %s
                 """,
-                (body.rating, body.comment, body.reservation_id),
+                (body.rating, body.comment, student_user_id, sport_id, body.reservation_id),
             )
         else:
             cur.execute(
                 """
-                INSERT INTO ratings (reservation_id, rating, comment)
-                VALUES (%s, %s, %s)
+                INSERT INTO ratings (reservation_id, user_id, sport_id, rating, comment)
+                VALUES (%s, %s, %s, %s, %s)
                 """,
-                (body.reservation_id, body.rating, body.comment),
+                (body.reservation_id, student_user_id, sport_id, body.rating, body.comment),
             )
+
+        try:
+            _try_log_enrollment(
+                cur,
+                user_id=student_user_id,
+                schedule_id=schedule_id,
+                reservation_id=body.reservation_id,
+                action="GRADED",
+                notes=f"Nota {body.rating}",
+                sport_id=sport_id,
+            )
+            _try_create_notification(
+                cur,
+                user_id=student_user_id,
+                title="Nueva calificación",
+                message=f"Tu nota fue registrada: {body.rating}",
+                notif_type="GRADE",
+            )
+        except Exception:
+            pass
 
         conn.commit()
         cur.close()

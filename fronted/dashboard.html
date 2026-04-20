@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablero de indicadores — Deportes</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/components.css">
+</head>
+<body class="body--admin">
+    <div class="app app--wide">
+        <header class="header header--admin">
+            <div class="header__brand">
+                <span class="header__logo" aria-hidden="true">📊</span>
+                <div>
+                    <p class="header__title">Indicadores institucionales</p>
+                    <p class="header__subtitle">Vista embebida Power BI</p>
+                </div>
+            </div>
+            <div class="header__user">
+                <a class="btn btn--ghost" href="admin.html">Volver al panel</a>
+            </div>
+        </header>
+
+        <main class="main" style="padding-top: 8px;">
+            <p class="section-desc" style="margin-bottom: 12px;">
+                Vista del informe publicado. Tu equipo docente proporcionará el enlace de incrustación.
+            </p>
+            <div class="pbi-frame-wrap">
+                <iframe
+                    title="Tablero de indicadores"
+                    src="about:blank"
+                    loading="lazy"
+                    allowfullscreen
+                ></iframe>
+            </div>
+        </main>
+
+        <footer class="footer footer--minimal">
+            <p>Visualización para fines académicos · incrustación tipo iframe</p>
+        </footer>
+    </div>
+</body>
+</html>

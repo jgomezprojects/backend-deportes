@@ -5,6 +5,53 @@ body {
     min-height: 100vh;
 }
 
+.landing-hero {
+    max-width: 440px;
+    text-align: center;
+}
+
+.landing-lead {
+    line-height: 1.55;
+    color: #4a5568;
+}
+
+.landing-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.btn-landing {
+    padding: 12px 22px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    border: none;
+}
+
+.btn-landing--primary {
+    background: #1e40af;
+    color: #fff;
+}
+
+.btn-landing--primary:hover {
+    background: #1d4ed8;
+}
+
+.btn-landing--ghost {
+    background: #fff;
+    color: #1e40af;
+    border: 1px solid #cbd5e0;
+}
+
+.btn-landing--ghost:hover {
+    background: #f8fafc;
+}
+
 .container {
     width: 100%;
     max-width: 380px;

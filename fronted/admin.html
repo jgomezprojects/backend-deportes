@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel administrador — Deportes</title>
+    <title>Administración — Deportes</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
 </head>
 <body class="body--admin">
-    <div class="app">
+    <div class="app app--wide">
         <header class="header header--admin">
             <div class="header__brand">
                 <span class="header__logo" aria-hidden="true">⚙</span>
                 <div>
-                    <p class="header__title">Panel Administrador</p>
-                    <p class="header__subtitle">Gestión deportiva universitaria</p>
+                    <p class="header__title">Administración</p>
+                    <p class="header__subtitle">Coordinación de actividad física y espacios</p>
                 </div>
             </div>
             <div class="header__user">
@@ -25,42 +27,77 @@
         <nav class="tabs" role="tablist" aria-label="Secciones del panel">
             <button type="button" class="tabs__btn is-active" role="tab" aria-selected="true" data-tab="usuarios">Usuarios</button>
             <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="horarios">Horarios</button>
-            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="reservas">Reservas</button>
-            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="sistema">Sistema</button>
+            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="reservas">Inscripciones</button>
+            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="historial">Historial académico</button>
+            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="sistema">Resumen</button>
         </nav>
+
+        <div id="admin-sport-rail-mount" class="sport-rail-mount" hidden aria-label="Filtro por deporte"></div>
 
         <main class="main">
             <p class="flash" id="flash-msg" hidden></p>
 
             <section id="panel-usuarios" class="tab-panel is-active" role="tabpanel" data-panel="usuarios">
-                <h2 class="section-title">Usuarios registrados</h2>
-                <p class="section-desc">Listado desde la base de datos (sin contraseñas).</p>
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nombre</th>
-                                <th>Rol</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-tabla-usuarios-body"></tbody>
-                    </table>
+                <h2 class="section-title">Directorio de usuarios</h2>
+                <p class="section-desc">Listas actualizadas por perfil (sin datos sensibles).</p>
+                <div class="kpi-band" id="admin-kpi-usuarios"></div>
+
+                <div class="role-block">
+                    <h3 class="role-block__title">Estudiantes</h3>
+                    <div class="table-wrap">
+                        <table id="dt-admin-est" class="display nowrap" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-tb-est"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="role-block">
+                    <h3 class="role-block__title">Docentes</h3>
+                    <div class="table-wrap">
+                        <table id="dt-admin-prof" class="display nowrap" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-tb-prof"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="role-block">
+                    <h3 class="role-block__title">Administradores</h3>
+                    <div class="table-wrap">
+                        <table id="dt-admin-adm" class="display nowrap" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-tb-adm"></tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 
             <section id="panel-horarios" class="tab-panel" role="tabpanel" hidden data-panel="horarios">
-                <h2 class="section-title">Horarios y cupos</h2>
-                <p class="section-desc">Asigna un profesor a cada horario (columna <code>instructor_id</code>).</p>
+                <h2 class="section-title">Programación de horarios</h2>
+                <p class="section-desc">Crea franjas y asigna docentes a cada grupo.</p>
                 <div class="card admin-create-card">
-                    <h3 class="card__title">Crear nuevo horario</h3>
+                    <h3 class="card__title">Nueva franja</h3>
                     <form id="admin-create-schedule-form" class="admin-form-grid">
                         <label class="admin-form-field">
                             <span>Deporte</span>
                             <select id="admin-sport-id" required></select>
                         </label>
                         <label class="admin-form-field">
-                            <span>Lugar</span>
+                            <span>Instalación</span>
                             <select id="admin-location-id" required></select>
                         </label>
                         <label class="admin-form-field">
@@ -68,7 +105,7 @@
                             <select id="admin-level-id" required></select>
                         </label>
                         <label class="admin-form-field">
-                            <span>Profesor (opcional)</span>
+                            <span>Docente (opcional)</span>
                             <select id="admin-instructor-id"></select>
                         </label>
                         <label class="admin-form-field">
@@ -76,29 +113,42 @@
                             <input id="admin-day" type="text" placeholder="Lunes" required>
                         </label>
                         <label class="admin-form-field">
-                            <span>Hora</span>
-                            <input id="admin-hour" type="text" placeholder="18:00" required>
+                            <span>Hora inicio</span>
+                            <input id="admin-hour-start" type="time" step="1800" required>
+                        </label>
+                        <label class="admin-form-field">
+                            <span>Duración</span>
+                            <select id="admin-duration-minutes" required>
+                                <option value="60">60 min</option>
+                                <option value="90" selected>90 min</option>
+                                <option value="120">120 min</option>
+                            </select>
+                        </label>
+                        <label class="admin-form-field">
+                            <span>Vista previa horario</span>
+                            <input id="admin-hour-range" type="text" readonly placeholder="18:00-19:30">
                         </label>
                         <label class="admin-form-field">
                             <span>Cupos</span>
                             <input id="admin-capacity" type="number" min="1" value="20" required>
                         </label>
                         <div class="admin-form-actions">
-                            <button type="submit" class="btn btn--primary" id="admin-btn-create-schedule">Crear horario</button>
+                            <button type="submit" class="btn btn--primary" id="admin-btn-create-schedule">Publicar horario</button>
                         </div>
                     </form>
                 </div>
                 <div class="table-wrap">
-                    <table class="data-table">
+                    <table id="dt-admin-horarios" class="display nowrap" style="width:100%">
                         <thead>
                             <tr>
-                                <th>Deporte</th>
-                                <th>Lugar</th>
+                                <th>Actividad</th>
+                                <th>Instalación</th>
                                 <th>Nivel</th>
                                 <th>Día</th>
-                                <th>Hora</th>
+                                <th>Horario</th>
                                 <th>Cupos</th>
-                                <th>Profesor</th>
+                                <th>Docente</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="admin-tabla-horarios-body"></tbody>
@@ -107,16 +157,17 @@
             </section>
 
             <section id="panel-reservas" class="tab-panel" role="tabpanel" hidden data-panel="reservas">
-                <h2 class="section-title">Todas las reservas</h2>
-                <p class="section-desc">Inscripciones de estudiantes a horarios.</p>
+                <h2 class="section-title">Inscripciones por actividad</h2>
+                <p class="section-desc">Matrículas activas ordenadas por deporte.</p>
                 <div class="table-wrap">
-                    <table class="data-table">
+                    <table id="dt-admin-reservas" class="display nowrap" style="width:100%">
                         <thead>
                             <tr>
-                                <th>Estudiante</th>
-                                <th>Deporte</th>
+                                <th>Actividad</th>
+                                <th>Participante</th>
                                 <th>Día</th>
-                                <th>Hora</th>
+                                <th>Horario</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="admin-tabla-reservas-body"></tbody>
@@ -124,24 +175,51 @@
                 </div>
             </section>
 
+            <section id="panel-historial" class="tab-panel" role="tabpanel" hidden data-panel="historial">
+                <h2 class="section-title">Historial de movimientos</h2>
+                <p class="section-desc">Altas, bajas y evaluaciones registradas en el sistema.</p>
+                <div class="table-wrap">
+                    <table id="dt-admin-historial" class="display nowrap" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Participante</th>
+                                <th>Actividad</th>
+                                <th>Evento</th>
+                                <th>Detalle</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-tabla-historial-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
             <section id="panel-sistema" class="tab-panel" role="tabpanel" hidden data-panel="sistema">
-                <h2 class="section-title">Resumen del sistema</h2>
-                <p class="section-desc">Indicadores en tiempo real desde la API.</p>
-                <div id="admin-resumen" class="card-grid"></div>
-                <div class="card admin-doc">
-                    <p class="card__label">Documentación</p>
-                    <h3 class="card__title">Backend FastAPI + PostgreSQL (Neon)</h3>
-                    <p class="card__meta">Los cambios estructurales (nuevas tablas o columnas) se realizan en la consola SQL de Neon y en <code>main.py</code>.</p>
+                <h2 class="section-title">Indicadores y tablero</h2>
+                <p class="section-desc">Resumen operativo y acceso al tablero de indicadores institucionales.</p>
+                <div id="admin-resumen" class="kpi-band"></div>
+                <div class="card" style="margin-top:1rem;">
+                    <p class="card__label">Analítica</p>
+                    <h3 class="card__title">Tablero Power BI</h3>
+                    <p class="card__meta">Consulta gráficos y métricas consolidadas en una vista dedicada.</p>
+                    <p style="margin-top:12px">
+                        <a class="btn btn--primary" href="dashboard.html">Abrir tablero de indicadores</a>
+                    </p>
                 </div>
             </section>
         </main>
 
-        <footer class="footer">
-            <p>Conectado a API local · <span id="api-status">—</span></p>
+        <footer class="footer footer--minimal">
+            <p>Panel de administración · <span id="api-status">—</span></p>
         </footer>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="js/datatables-init.js"></script>
     <script src="js/panel-utils.js"></script>
+    <script src="js/sport-filter.js"></script>
+    <script src="js/ui-components.js"></script>
     <script src="js/admin.js"></script>
 </body>
 </html>

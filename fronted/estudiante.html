@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel estudiante — Deportes</title>
+    <title>Portal estudiante — Deportes</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
 </head>
 <body class="body--estudiante">
-    <div class="app">
+    <div class="app app--wide">
         <header class="header header--estudiante">
             <div class="header__brand">
                 <span class="header__logo" aria-hidden="true">◆</span>
                 <div>
-                    <p class="header__title">Panel Estudiante</p>
-                    <p class="header__subtitle">Gestión deportiva universitaria</p>
+                    <p class="header__title">Portal del estudiante</p>
+                    <p class="header__subtitle">Bienestar y deporte universitario</p>
                 </div>
             </div>
             <div class="header__user">
@@ -23,61 +25,86 @@
         </header>
 
         <nav class="tabs" role="tablist" aria-label="Secciones del panel">
-            <button type="button" class="tabs__btn is-active" role="tab" aria-selected="true" data-tab="clases">Clases disponibles</button>
-            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="reservas">Mis reservas</button>
-            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="horarios">Horarios</button>
-            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="notas">Mis notas</button>
+            <button type="button" class="tabs__btn is-active" role="tab" aria-selected="true" data-tab="clases">Explorar clases</button>
+            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="reservas">Mis clases</button>
+            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="horarios">Mi horario</button>
+            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="notas">Rendimiento</button>
         </nav>
+
+        <div id="est-sport-rail-mount" class="sport-rail-mount" aria-label="Filtro por deporte"></div>
 
         <main class="main">
             <p class="flash" id="flash-msg" hidden></p>
 
             <section id="panel-clases" class="tab-panel is-active" role="tabpanel" data-panel="clases">
-                <h2 class="section-title">Clases disponibles</h2>
-                <p class="section-desc">Datos en vivo desde el servidor: deporte, nivel, lugar, horario y profesor.</p>
-                <div id="lista-clases" class="card-grid"></div>
+                <h2 class="section-title">Catálogo de clases</h2>
+                <p class="section-desc">Elige una actividad e inscríbete cuando haya cupos disponibles.</p>
+                <div id="lista-clases" class="card-grid card-grid--classes"></div>
             </section>
 
             <section id="panel-reservas" class="tab-panel" role="tabpanel" hidden data-panel="reservas">
-                <h2 class="section-title">Mis reservas</h2>
-                <p class="section-desc">Tus inscripciones actuales.</p>
-                <div id="lista-reservas" class="list-block"></div>
+                <h2 class="section-title">Mis clases inscritas</h2>
+                <p class="section-desc">Actividades en las que estás matriculado actualmente.</p>
+                <div id="lista-reservas" class="list-block list-block--enroll"></div>
             </section>
 
             <section id="panel-horarios" class="tab-panel" role="tabpanel" hidden data-panel="horarios">
-                <h2 class="section-title">Horarios</h2>
-                <p class="section-desc">Todos los horarios programados.</p>
-                <div class="table-wrap">
-                    <table class="data-table" id="tabla-horarios">
-                        <thead>
-                            <tr>
-                                <th>Deporte</th>
-                                <th>Lugar</th>
-                                <th>Nivel</th>
-                                <th>Día</th>
-                                <th>Hora</th>
-                                <th>Profesor</th>
-                                <th>Cupos</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-horarios-body"></tbody>
-                    </table>
-                </div>
+                <h2 class="section-title">Mi horario semanal</h2>
+                <p class="section-desc">Solo las sesiones en las que participas.</p>
+                <div id="week-schedule" class="week-schedule"></div>
             </section>
 
             <section id="panel-notas" class="tab-panel" role="tabpanel" hidden data-panel="notas">
-                <h2 class="section-title">Mis notas</h2>
-                <p class="section-desc">Calificaciones y comentarios por reserva (desde la base de datos).</p>
-                <div id="lista-notas" class="list-block"></div>
+                <h2 class="section-title">Rendimiento académico</h2>
+                <p class="section-desc">Consulta tus calificaciones por periodo y bloque de sesiones (vista orientativa).</p>
+                <div class="filter-bar">
+                    <label>Periodo
+                        <select id="filtro-periodo-notas">
+                            <option value="all">Todos los periodos</option>
+                            <option value="2026-1" selected>2026-1</option>
+                            <option value="2026-2">2026-2</option>
+                        </select>
+                    </label>
+                    <label>Bloque de sesiones
+                        <select id="filtro-sesion-notas">
+                            <option value="all">Todas</option>
+                            <option value="1">Bloque 1</option>
+                            <option value="2">Bloque 2</option>
+                            <option value="3">Bloque 3</option>
+                        </select>
+                    </label>
+                </div>
+                <p id="notas-promedio-global" class="calif-promedio-hint" hidden></p>
+                <div class="table-wrap">
+                    <table id="dt-notas-estudiante" class="display nowrap" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Actividad</th>
+                                <th>Docente</th>
+                                <th>Día</th>
+                                <th>Hora</th>
+                                <th>Nota</th>
+                                <th>Retroalimentación</th>
+                                <th>Bloque</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-notas-estudiante"></tbody>
+                    </table>
+                </div>
             </section>
         </main>
 
-        <footer class="footer">
-            <p>Conectado a API local · <span id="api-status">—</span></p>
+        <footer class="footer footer--minimal">
+            <p>Portal institucional de deportes · <span id="api-status">—</span></p>
         </footer>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="js/datatables-init.js"></script>
     <script src="js/panel-utils.js"></script>
+    <script src="js/sport-filter.js"></script>
+    <script src="js/ui-components.js"></script>
     <script src="js/estudiante.js"></script>
 </body>
 </html>

@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel profesor — Deportes</title>
+    <title>Portal docente — Deportes</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
 </head>
 <body class="body--profesor">
-    <div class="app">
+    <div class="app app--wide">
         <header class="header header--profesor">
             <div class="header__brand">
                 <span class="header__logo" aria-hidden="true">◎</span>
                 <div>
-                    <p class="header__title">Panel Profesor</p>
-                    <p class="header__subtitle">Gestión deportiva universitaria</p>
+                    <p class="header__title">Espacio docente</p>
+                    <p class="header__subtitle">Seguimiento de grupos y evaluación</p>
                 </div>
             </div>
             <div class="header__user">
@@ -23,26 +25,28 @@
         </header>
 
         <nav class="tabs" role="tablist" aria-label="Secciones del panel">
-            <button type="button" class="tabs__btn is-active" role="tab" aria-selected="true" data-tab="clases">Mis clases</button>
-            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="alumnos">Alumnos</button>
-            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="calificaciones">Calificaciones</button>
+            <button type="button" class="tabs__btn is-active" role="tab" aria-selected="true" data-tab="clases">Mis asignaturas</button>
+            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="alumnos">Asistencia</button>
+            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="calificaciones">Evaluación</button>
         </nav>
+
+        <div id="prof-sport-rail-mount" class="sport-rail-mount" aria-label="Filtro por deporte"></div>
 
         <main class="main">
             <p class="flash" id="flash-msg" hidden></p>
 
             <section id="panel-clases" class="tab-panel is-active" role="tabpanel" data-panel="clases">
-                <h2 class="section-title">Mis clases</h2>
-                <p class="section-desc">Horarios donde figuras como instructor (<code>instructor_id</code>).</p>
+                <h2 class="section-title">Mis grupos asignados</h2>
+                <p class="section-desc">Clases donde apareces como docente a cargo.</p>
                 <div class="table-wrap">
-                    <table class="data-table">
+                    <table id="dt-prof-clases" class="display nowrap" style="width:100%">
                         <thead>
                             <tr>
-                                <th>Deporte</th>
-                                <th>Lugar</th>
+                                <th>Actividad</th>
+                                <th>Instalación</th>
                                 <th>Nivel</th>
                                 <th>Día</th>
-                                <th>Hora</th>
+                                <th>Horario</th>
                                 <th>Cupos</th>
                             </tr>
                         </thead>
@@ -52,24 +56,34 @@
             </section>
 
             <section id="panel-alumnos" class="tab-panel" role="tabpanel" hidden data-panel="alumnos">
-                <h2 class="section-title">Alumnos</h2>
-                <p class="section-desc">Estudiantes inscritos en tus horarios.</p>
-                <div id="prof-lista-alumnos" class="list-block"></div>
+                <h2 class="section-title">Control de asistencia</h2>
+                <p class="section-desc">Organiza por actividad y bloque; registra presencia de tu grupo.</p>
+                <div class="session-bar" id="prof-session-bar" aria-label="Bloque de sesiones">
+                    <button type="button" class="session-chip is-active" data-ses="1">Bloque 1</button>
+                    <button type="button" class="session-chip" data-ses="2">Bloque 2</button>
+                    <button type="button" class="session-chip" data-ses="3">Bloque 3</button>
+                </div>
+                <div id="prof-lista-alumnos" class="prof-alumnos-wrap"></div>
             </section>
 
             <section id="panel-calificaciones" class="tab-panel" role="tabpanel" hidden data-panel="calificaciones">
-                <h2 class="section-title">Calificaciones</h2>
-                <p class="section-desc">Asigna o actualiza nota y comentario por alumno (se guarda en la tabla <code>ratings</code>).</p>
-                <div id="prof-lista-calificaciones" class="list-block list-block--calif"></div>
+                <h2 class="section-title">Evaluación continua</h2>
+                <p class="section-desc">Registra hasta tres bloques por estudiante; el sistema calcula el promedio enviado al expediente.</p>
+                <div id="prof-lista-calificaciones" class="prof-calif-wrap"></div>
             </section>
         </main>
 
-        <footer class="footer">
-            <p>Conectado a API local · <span id="api-status">—</span></p>
+        <footer class="footer footer--minimal">
+            <p>Portal docente · <span id="api-status">—</span></p>
         </footer>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="js/datatables-init.js"></script>
     <script src="js/panel-utils.js"></script>
+    <script src="js/sport-filter.js"></script>
+    <script src="js/ui-components.js"></script>
     <script src="js/profesor.js"></script>
 </body>
 </html>

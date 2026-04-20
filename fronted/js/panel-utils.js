@@ -278,6 +278,32 @@
         return data;
     }
 
+    /** Inscripciones del profesor con attendance_status (PRESENT|ABSENT|null) */
+    async function cargarAsistenciaProfesor(instructorId) {
+        const data = await fetchJson(
+            `${API_BASE}/attendance?instructor_id=${encodeURIComponent(instructorId)}`
+        );
+        if (data && data.error) {
+            throw new Error(data.error);
+        }
+        if (!Array.isArray(data)) {
+            throw new Error("Respuesta inesperada del servidor");
+        }
+        return data;
+    }
+
+    async function registrarAsistencia(payload) {
+        const data = await fetchJson(`${API_BASE}/attendance`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        return data;
+    }
+
     async function patchScheduleInstructor(scheduleId, instructorId) {
         const data = await fetchJson(`${API_BASE}/schedules/${scheduleId}/instructor`, {
             method: "PATCH",
@@ -295,16 +321,73 @@
         return data;
     }
 
+    async function eliminarUsuario(userId) {
+        const data = await fetchJson(`${API_BASE}/users/${userId}`, {
+            method: "DELETE",
+        });
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        return data;
+    }
+
+    async function eliminarHorario(scheduleId) {
+        const data = await fetchJson(`${API_BASE}/schedules/${scheduleId}`, {
+            method: "DELETE",
+        });
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        return data;
+    }
+
+    async function eliminarReserva(reservaId) {
+        const data = await fetchJson(`${API_BASE}/reservas/${reservaId}`, {
+            method: "DELETE",
+        });
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        return data;
+    }
+
+    /**
+     * Historial de matrícula (enrollments_history / …).
+     * @param {{ user_id?: number, instructor_id?: number, schedule_id?: number, limit?: number }} opts
+     */
+    async function cargarHistorialMatricula(opts) {
+        const o = opts || {};
+        const q = new URLSearchParams();
+        if (o.user_id != null && o.user_id !== "") q.set("user_id", String(o.user_id));
+        if (o.instructor_id != null && o.instructor_id !== "")
+            q.set("instructor_id", String(o.instructor_id));
+        if (o.schedule_id != null && o.schedule_id !== "") q.set("schedule_id", String(o.schedule_id));
+        if (o.limit != null && o.limit !== "") q.set("limit", String(o.limit));
+        const qs = q.toString();
+        const data = await fetchJson(
+            `${API_BASE}/enrollment-history${qs ? `?${qs}` : ""}`
+        );
+        if (data && data.error) {
+            throw new Error(data.error);
+        }
+        if (!Array.isArray(data)) {
+            throw new Error("Respuesta inesperada del servidor");
+        }
+        return data;
+    }
+
     async function pingApi() {
         const statusEl = document.getElementById("api-status");
         try {
             const data = await fetchJson(`${API_BASE}/`);
             if (statusEl) {
-                statusEl.textContent = data.mensaje || "OK";
+                statusEl.textContent = data.mensaje ? "Servicio disponible" : "Conectado";
+                statusEl.classList.add("footer-ok");
             }
         } catch {
             if (statusEl) {
-                statusEl.textContent = "Sin conexión — revisa que el backend esté en marcha";
+                statusEl.textContent = "No se pudo conectar al portal. Intenta más tarde.";
+                statusEl.classList.remove("footer-ok");
             }
         }
     }
@@ -345,7 +428,13 @@
         cargarCalificacionesAlumno,
         cargarCalificacionesProfesor,
         guardarCalificacion,
+        cargarAsistenciaProfesor,
+        registrarAsistencia,
         patchScheduleInstructor,
+        eliminarUsuario,
+        eliminarHorario,
+        eliminarReserva,
+        cargarHistorialMatricula,
         pingApi,
         labelRol,
     };
