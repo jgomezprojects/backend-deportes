@@ -2,7 +2,7 @@
  * Utilidades compartidas entre paneles (estudiante, profesor, admin).
  */
 (function (global) {
-    const API_BASE = "http://127.0.0.1:8000";
+    const API_BASE = "https://backend-deportes-production-0925.up.railway.app";
 
     /** Índices filas GET /horarios (tuplas JSON) */
     const H = {
