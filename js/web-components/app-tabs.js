@@ -38,7 +38,6 @@ class AppTabs extends HTMLElement {
                     background: var(--color-gray-100, #f3f4f6);
                     padding: 0.25rem;
                     border-radius: 0.5rem;
-                    role: tablist;
                 }
                 .tabs--vertical {
                     flex-direction: column;

@@ -22,211 +22,296 @@
             <app-tab slot="tabs" name="dashboard" label="Dashboard"></app-tab>
             <app-tab slot="tabs" name="sistema" label="Resumen"></app-tab>
             
-            <app-tab-panel slot="panels" name="usuarios"></app-tab-panel>
-            <app-tab-panel slot="panels" name="horarios"></app-tab-panel>
-            <app-tab-panel slot="panels" name="reservas"></app-tab-panel>
-            <app-tab-panel slot="panels" name="historial"></app-tab-panel>
-            <app-tab-panel slot="panels" name="reportes"></app-tab-panel>
-            <app-tab-panel slot="panels" name="dashboard"></app-tab-panel>
-            <app-tab-panel slot="panels" name="sistema"></app-tab-panel>
-        </app-tabs>
+            <app-tab-panel slot="panels" name="usuarios">
+                <app-section panel-id="usuarios" active="true" 
+                      title="Directorio de usuarios" 
+                      description="Listas actualizadas por perfil (sin datos sensibles)." 
+                      show-kpi="true" kpi-id="admin-kpi-usuarios">
+        
+        <app-card variant="default" padding="normal">
+            <h3 class="role-block__title">Estudiantes</h3>
+            <app-table table-id="dt-admin-est" 
+                       columns="Nombre|Acciones"
+                       width="100%" nowrap="true" display="display">
+                <tbody slot="table-body" id="admin-tb-est"></tbody>
+            </app-table>
+        </app-card>
 
-        <div id="admin-sport-rail-mount" class="sport-rail-mount" hidden aria-label="Filtro por deporte"></div>
+        <app-card variant="default" padding="normal">
+            <h3 class="role-block__title">Docentes</h3>
+            <app-table table-id="dt-admin-prof" 
+                       columns="Nombre|Acciones"
+                       width="100%" nowrap="true" display="display">
+                <tbody slot="table-body" id="admin-tb-prof"></tbody>
+            </app-table>
+        </app-card>
 
-        <main class="main">
-            <p class="flash" id="flash-msg" hidden></p>
+        <app-card variant="default" padding="normal">
+            <h3 class="role-block__title">Administradores</h3>
+            <app-table table-id="dt-admin-adm" 
+                       columns="Nombre|Acciones"
+                       width="100%" nowrap="true" display="display">
+                <tbody slot="table-body" id="admin-tb-adm"></tbody>
+            </app-table>
+        </app-card>
 
-            <app-section id="panel-usuarios" panel-id="usuarios" active="true" 
-                  title="Directorio de usuarios" 
-                  description="Listas actualizadas por perfil (sin datos sensibles)." 
-                  show-kpi="true" kpi-id="admin-kpi-usuarios">
-    
-    <app-card variant="default" padding="normal">
-        <h3 class="role-block__title">Estudiantes</h3>
-        <app-table table-id="dt-admin-est" 
-                   columns="Nombre|Acciones"
-                   width="100%" nowrap="true" display="display">
-            <tbody slot="table-body" id="admin-tb-est"></tbody>
-        </app-table>
-    </app-card>
+    </app-section>
+            </app-tab-panel>
 
-    <app-card variant="default" padding="normal">
-        <h3 class="role-block__title">Docentes</h3>
-        <app-table table-id="dt-admin-prof" 
-                   columns="Nombre|Acciones"
-                   width="100%" nowrap="true" display="display">
-            <tbody slot="table-body" id="admin-tb-prof"></tbody>
-        </app-table>
-    </app-card>
-
-    <app-card variant="default" padding="normal">
-        <h3 class="role-block__title">Administradores</h3>
-        <app-table table-id="dt-admin-adm" 
-                   columns="Nombre|Acciones"
-                   width="100%" nowrap="true" display="display">
-            <tbody slot="table-body" id="admin-tb-adm"></tbody>
-        </app-table>
-    </app-card>
-
-</app-section>
-
-            <app-section id="panel-horarios" panel-id="horarios" active="false" 
-                  title="Programación de horarios" 
-                  description="Crea franjas y asigna docentes a cada grupo.">
-    
-    <app-card variant="create" padding="normal" title="Nueva franja">
-        <form id="admin-create-schedule-form" class="admin-form-grid">
-            <label class="admin-form-field">
-                <span>Deporte</span>
-                <select id="admin-sport-id" required></select>
-            </label>
-            <label class="admin-form-field">
-                <span>Instalación</span>
-                <select id="admin-location-id" required></select>
-            </label>
-            <label class="admin-form-field">
-                <span>Nivel</span>
-                <select id="admin-level-id" required></select>
-            </label>
-            <label class="admin-form-field">
-                <span>Docente (opcional)</span>
-                <select id="admin-instructor-id"></select>
-            </label>
-            <label class="admin-form-field">
-                <span>Día</span>
-                <input id="admin-day" type="text" placeholder="Lunes" required>
-            </label>
-            <label class="admin-form-field">
-                <span>Hora inicio</span>
-                <input id="admin-hour-start" type="time" step="1800" required>
-            </label>
-            <label class="admin-form-field">
-                <span>Duración</span>
-                <select id="admin-duration-minutes" required>
-                    <option value="60">60 min</option>
-                    <option value="90" selected>90 min</option>
-                    <option value="120">120 min</option>
-                </select>
-            </label>
-            <label class="admin-form-field">
-                <span>Vista previa horario</span>
-                <input id="admin-hour-range" type="text" readonly placeholder="18:00-19:30">
-            </label>
-            <label class="admin-form-field">
-                <span>Cupos</span>
-                <input id="admin-capacity" type="number" min="1" value="20" required>
-            </label>
-            <div class="admin-form-actions">
-                <button type="submit" class="btn btn--primary" id="admin-btn-create-schedule">Publicar horario</button>
-            </div>
-        </form>
-    </app-card>
-
-    <app-table table-id="dt-admin-horarios" 
-               columns="Actividad|Instalación|Nivel|Día|Horario|Cupos|Docente|Acciones"
-               width="100%" nowrap="true" display="display">
-        <tbody slot="table-body" id="admin-tabla-horarios-body"></tbody>
-    </app-table>
-
-</app-section>
-
-            <app-section id="panel-reservas" panel-id="reservas" active="false" 
-                  title="Inscripciones por actividad" 
-                  description="Matrículas activas ordenadas por deporte.">
-    <app-table table-id="dt-admin-reservas" 
-               columns="Actividad|Participante|Día|Horario|Acciones"
-               width="100%" nowrap="true" display="display">
-        <tbody slot="table-body" id="admin-tabla-reservas-body"></tbody>
-    </app-table>
-</app-section>
-
-            <app-section id="panel-historial" panel-id="historial" active="false" 
-                  title="Historial de movimientos" 
-                  description="Altas, bajas y evaluaciones registradas en el sistema.">
-    <app-table table-id="dt-admin-historial" 
-               columns="Fecha|Participante|Actividad|Evento|Detalle"
-               width="100%" nowrap="true" display="display">
-        <tbody slot="table-body" id="admin-tabla-historial-body"></tbody>
-    </app-table>
-</app-section>
-
-            <app-section id="panel-reportes" panel-id="reportes" active="false" 
-                  title="Generador de Reportes" 
-                  description="Genera reportes en PDF con filtros personalizados para análisis y toma de decisiones.">
-    
-    <app-card variant="default" padding="normal" title="Configurar Reporte">
-        <form id="reporte-form" class="admin-form-grid">
-            <div class="reporte-filtros">
+            <app-tab-panel slot="panels" name="horarios">
+                <app-section panel-id="horarios" active="false" 
+                      title="Programación de horarios" 
+                      description="Crea franjas y asigna docentes a cada grupo.">
+        
+        <app-card variant="create" padding="normal" title="Nueva franja">
+            <form id="admin-create-schedule-form" class="admin-form-grid">
                 <label class="admin-form-field">
-                    <span>Tipo de Reporte</span>
-                    <select id="reporte-tipo" required>
-                        <option value="">Seleccionar...</option>
-                        <option value="usuarios">Reporte de Usuarios</option>
-                        <option value="inscripciones">Reporte de Inscripciones</option>
-                        <option value="asistencia">Reporte de Asistencia</option>
-                        <option value="rendimiento">Reporte de Rendimiento Académico</option>
+                    <span>Deporte</span>
+                    <select id="admin-sport-id" required></select>
+                </label>
+                <label class="admin-form-field">
+                    <span>Instalación</span>
+                    <select id="admin-location-id" required></select>
+                </label>
+                <label class="admin-form-field">
+                    <span>Nivel</span>
+                    <select id="admin-level-id" required></select>
+                </label>
+                <label class="admin-form-field">
+                    <span>Docente (opcional)</span>
+                    <select id="admin-instructor-id"></select>
+                </label>
+                <label class="admin-form-field">
+                    <span>Día</span>
+                    <input id="admin-day" type="text" placeholder="Lunes" required>
+                </label>
+                <label class="admin-form-field">
+                    <span>Hora inicio</span>
+                    <input id="admin-hour-start" type="time" step="1800" required>
+                </label>
+                <label class="admin-form-field">
+                    <span>Duración</span>
+                    <select id="admin-duration-minutes" required>
+                        <option value="60">60 min</option>
+                        <option value="90" selected>90 min</option>
+                        <option value="120">120 min</option>
                     </select>
                 </label>
-                
                 <label class="admin-form-field">
-                    <span>Rango de Fechas</span>
-                    <input type="date" id="reporte-fecha-inicio" required>
+                    <span>Vista previa horario</span>
+                    <input id="admin-hour-range" type="text" readonly placeholder="18:00-19:30">
                 </label>
-                
                 <label class="admin-form-field">
-                    <span>Fecha Fin</span>
-                    <input type="date" id="reporte-fecha-fin" required>
+                    <span>Cupos</span>
+                    <input id="admin-capacity" type="number" min="1" value="20" required>
                 </label>
-                
-                <label class="admin-form-field">
-                    <span>Filtro por Rol</span>
-                    <select id="reporte-rol">
-                        <option value="todos">Todos los roles</option>
-                        <option value="1">Estudiantes</option>
-                        <option value="2">Profesores</option>
-                        <option value="3">Administradores</option>
-                    </select>
-                </label>
-                
-                <label class="admin-form-field">
-                    <span>Filtro por Deporte</span>
-                    <select id="reporte-deporte">
-                        <option value="todos">Todos los deportes</option>
-                        <option value="futbol">Fútbol</option>
-                        <option value="basketball">Basketball</option>
-                        <option value="voleibol">Voleibol</option>
-                        <option value="tenis">Tenis</option>
-                        <option value="natacion">Natación</option>
-                    </select>
-                </label>
-                
-                <label class="admin-form-field">
-                    <span>Formato de Salida</span>
-                    <select id="reporte-formato">
-                        <option value="pdf">PDF</option>
-                        <option value="excel">Excel</option>
-                    </select>
-                </label>
-            </div>
+                <div class="admin-form-actions">
+                    <button type="submit" class="btn btn--primary" id="admin-btn-create-schedule">Publicar horario</button>
+                </div>
+            </form>
+        </app-card>
+
+        <app-card variant="default" padding="normal" title="Catálogo actual">
+            <app-table table-id="dt-admin-horarios" 
+                       columns="Deporte|Instalación|Nivel|Docente|Día|Horario|Cupos|Acciones"
+                       width="100%" nowrap="true" display="display">
+                <tbody slot="table-body" id="admin-tb-horarios"></tbody>
+            </app-table>
+        </app-card>
+
+    </app-section>
+            </app-tab-panel>
+
+            <app-tab-panel slot="panels" name="reservas">
+                <app-section panel-id="reservas" active="false" 
+                      title="Inscripciones activas" 
+                      description="Gestiona matrículas y cancelaciones.">
+            <app-table table-id="dt-admin-reservas" 
+                       columns="Deporte|Estudiante|Día|Horario|Acciones"
+                       width="100%" nowrap="true" display="display">
+                <tbody slot="table-body" id="admin-tabla-reservas-body"></tbody>
+            </app-table>
+        </app-section>
+            </app-tab-panel>
+
+            <app-tab-panel slot="panels" name="historial">
+                <app-section panel-id="historial" active="false" 
+                      title="Historial de movimientos" 
+                      description="Altas, bajas y evaluaciones registradas en el sistema.">
+            <app-table table-id="dt-admin-historial" 
+                       columns="Fecha|Participante|Actividad|Evento|Detalle"
+                       width="100%" nowrap="true" display="display">
+                <tbody slot="table-body" id="admin-tabla-historial-body"></tbody>
+            </app-table>
+        </app-section>
+            </app-tab-panel>
+
+            <app-tab-panel slot="panels" name="reportes">
+                <app-section panel-id="reportes" active="false" 
+                      title="Generador de Reportes" 
+                      description="Genera reportes en PDF con filtros personalizados para análisis y toma de decisiones.">
             
-            <div class="admin-form-actions">
-                <button type="button" class="btn btn--primary" id="btn-generar-reporte">
+        <app-card variant="default" padding="normal" title="Configurar Reporte">
+            <form id="reporte-form" class="admin-form-grid">
+                <div class="reporte-filtros">
+                    <label class="admin-form-field">
+                        <span>Tipo de Reporte</span>
+                        <select id="reporte-tipo" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="usuarios">Reporte de Usuarios</option>
+                            <option value="inscripciones">Reporte de Inscripciones</option>
+                            <option value="asistencia">Reporte de Asistencia</option>
+                            <option value="rendimiento">Reporte de Rendimiento Académico</option>
+                        </select>
+                    </label>
+                    
+                    <label class="admin-form-field">
+                        <span>Rango de Fechas</span>
+                        <input type="date" id="reporte-fecha-inicio" required>
+                    </label>
+                    
+                    <label class="admin-form-field">
+                        <span>Fecha Fin</span>
+                        <input type="date" id="reporte-fecha-fin" required>
+                    </label>
+                    
+                    <label class="admin-form-field">
+                        <span>Filtro por Rol</span>
+                        <select id="reporte-rol">
+                            <option value="todos">Todos los roles</option>
+                            <option value="1">Estudiantes</option>
+                            <option value="2">Profesores</option>
+                            <option value="3">Administradores</option>
+                        </select>
+                    </label>
+                    
+                    <label class="admin-form-field">
+                        <span>Filtro por Deporte</span>
+                        <select id="reporte-deporte">
+                            <option value="todos">Todos los deportes</option>
+                            <option value="futbol">Fútbol</option>
+                            <option value="basketball">Basketball</option>
+                            <option value="voleibol">Voleibol</option>
+                            <option value="tenis">Tenis</option>
+                            <option value="natacion">Natación</option>
+                        </select>
+                    </label>
+                    
+                    <label class="admin-form-field">
+                        <span>Formato de Salida</span>
+                        <select id="reporte-formato">
+                            <option value="pdf">PDF</option>
+                            <option value="excel">Excel</option>
+                        </select>
+                    </label>
+                </div>
+                
+                <div class="admin-form-actions">
+                    <button type="button" class="btn btn--primary" id="btn-generar-reporte">
+                        <span class="btn-icon">📊</span>
+                        Generar Reporte
+                    </button>
+                    <button type="button" class="btn btn--ghost" id="btn-vista-previa">
+                        <span class="btn-icon">👁️</span>
+                        Vista Previa
+                    </button>
+                </div>
+            </form>
+        </app-card>
+
+        <div id="reporte-preview" class="reporte-preview" hidden>
+            <app-card variant="default" padding="normal" title="Vista Previa del Reporte">
+                <div id="reporte-preview-content"></div>
+                <div class="card__actions">
+                    <button type="button" class="btn btn--primary" id="btn-descargar-reporte">
+                        <span class="btn-icon">⬇️</span>
+                        Descargar Reporte
+                    </button>
+                </div>
+            </app-card>
+        </div>
+
+    </app-section>
+            </app-tab-panel>
+
+            <app-tab-panel slot="panels" name="dashboard">
+                <app-section panel-id="dashboard" active="false" 
+                      title="Dashboard de PowerBI" 
+                      description="Visualización interactiva de datos y métricas en tiempo real.">
+            
+        <app-card variant="default" padding="normal">
+            <div class="dashboard-container">
+                <iframe 
+                    src="https://app.powerbi.com/view?r=eyJrIjoiNzYzZjQ5ZS0yNzY4LTQ0NzItYjM5Ny1kNzY5ZjI0MzY5NSIsImIjOiJhMDZmZmM4ZC0zZjM4LTQ5NGMtYjE1Mi1hNzU2ZmFjNjU5ZmIifQ%3D%3D"
+                    width="100%" 
+                    height="600" 
+                    frameborder="0" 
+                    allowFullScreen="true">
+                </iframe>
+            </div>
+        </app-card>
+
+    </app-section>
+            </app-tab-panel>
+
+            <app-tab-panel slot="panels" name="sistema">
+                <app-section panel-id="sistema" active="false" 
+                      title="Resumen del Sistema" 
+                      description="Estado general y métricas clave de la plataforma.">
+            
+        <div class="metrics-grid">
+            <metric-card 
+                title="Usuarios Totales" 
+                value="0" 
+                icon="👥"
+                trend="up"
+                description="Total de usuarios registrados">
+            </metric-card>
+            
+            <metric-card 
+                title="Clases Activas" 
+                value="0" 
+                icon="📅"
+                trend="stable"
+                description="Franjas horarias publicadas">
+            </metric-card>
+            
+            <metric-card 
+                title="Inscripciones" 
+                value="0" 
+                icon="✅"
+                trend="up"
+                description="Matrículas confirmadas">
+            </metric-card>
+            
+            <metric-card 
+                title="Tasa Ocupación" 
+                value="0%" 
+                icon="📊"
+                trend="up"
+                description="Promedio de ocupación">
+            </metric-card>
+        </div>
+
+        <app-card variant="default" padding="normal" title="Acciones Rápidas">
+            <div class="quick-actions">
+                <a href="dashboard.html" class="btn btn--primary" target="_blank">
                     <span class="btn-icon">📊</span>
-                    Generar Reporte
+                    Ver Dashboard Completo
+                </a>
+                <button type="button" class="btn btn--ghost" id="btn-exportar-datos">
+                    <span class="btn-icon">📥</span>
+                    Exportar Datos
                 </button>
-                <button type="button" class="btn btn--ghost" id="btn-vista-previa">
-                    <span class="btn-icon">👁️</span>
-                    Vista Previa
+                <button type="button" class="btn btn--ghost" id="btn-limpiar-cache">
+                    <span class="btn-icon">🗑️</span>
+                    Limpiar Caché
                 </button>
             </div>
-        </form>
-    </app-card>
+        </app-card>
 
-    <div id="reporte-preview" class="reporte-preview" hidden>
-        <app-card variant="default" padding="normal" title="Vista Previa del Reporte">
-            <div id="reporte-preview-content"></div>
-            <div class="card__actions">
-                <button type="button" class="btn btn--primary" id="btn-descargar-reporte">
+    </app-section>
+            </app-tab-panel>
                     <span class="btn-icon">⬇️</span>
                     Descargar Reporte
                 </button>
