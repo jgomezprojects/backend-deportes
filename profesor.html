@@ -7,75 +7,48 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="css/dashboard-styles.css">
 </head>
 <body class="body--profesor">
     <div class="app app--wide">
-        <header class="header header--profesor">
-            <div class="header__brand">
-                <span class="header__logo" aria-hidden="true">◎</span>
-                <div>
-                    <p class="header__title">Espacio docente</p>
-                    <p class="header__subtitle">Seguimiento de grupos y evaluación</p>
-                </div>
-            </div>
-            <div class="header__user">
-                <span class="header__welcome">Hola <strong id="user-display-name">—</strong></span>
-                <button type="button" class="btn btn--ghost" id="btn-logout">Cerrar sesión</button>
-            </div>
-        </header>
+        <app-header role="profesor"></app-header>
 
-        <nav class="tabs" role="tablist" aria-label="Secciones del panel">
-            <button type="button" class="tabs__btn is-active" role="tab" aria-selected="true" data-tab="clases">Mis asignaturas</button>
-            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="alumnos">Asistencia</button>
-            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="calificaciones">Evaluación</button>
-        </nav>
+        <app-tabs tabs="clases:Mis asignaturas|alumnos:Asistencia|calificaciones:Evaluación" active-tab="clases"></app-tabs>
 
         <div id="prof-sport-rail-mount" class="sport-rail-mount" aria-label="Filtro por deporte"></div>
 
         <main class="main">
             <p class="flash" id="flash-msg" hidden></p>
 
-            <section id="panel-clases" class="tab-panel is-active" role="tabpanel" data-panel="clases">
-                <h2 class="section-title">Mis grupos asignados</h2>
-                <p class="section-desc">Clases donde apareces como docente a cargo.</p>
-                <div class="table-wrap">
-                    <table id="dt-prof-clases" class="display nowrap" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th>Actividad</th>
-                                <th>Instalación</th>
-                                <th>Nivel</th>
-                                <th>Día</th>
-                                <th>Horario</th>
-                                <th>Cupos</th>
-                            </tr>
-                        </thead>
-                        <tbody id="prof-tabla-clases-body"></tbody>
-                    </table>
-                </div>
-            </section>
+            <app-section id="panel-clases" panel-id="clases" active="true" 
+                  title="Mis grupos asignados" 
+                  description="Clases donde apareces como docente a cargo.">
+    <app-table table-id="dt-prof-clases" 
+               columns="Actividad|Instalación|Nivel|Día|Horario|Cupos"
+               width="100%" nowrap="true" display="display">
+        <tbody slot="table-body" id="prof-tabla-clases-body"></tbody>
+    </app-table>
+</app-section>
 
-            <section id="panel-alumnos" class="tab-panel" role="tabpanel" hidden data-panel="alumnos">
-                <h2 class="section-title">Control de asistencia</h2>
-                <p class="section-desc">Organiza por actividad y bloque; registra presencia de tu grupo.</p>
-                <div class="session-bar" id="prof-session-bar" aria-label="Bloque de sesiones">
-                    <button type="button" class="session-chip is-active" data-ses="1">Bloque 1</button>
-                    <button type="button" class="session-chip" data-ses="2">Bloque 2</button>
-                    <button type="button" class="session-chip" data-ses="3">Bloque 3</button>
-                </div>
-                <div id="prof-lista-alumnos" class="prof-alumnos-wrap"></div>
-            </section>
+            <app-section id="panel-alumnos" panel-id="alumnos" active="false" 
+                  title="Control de asistencia" 
+                  description="Organiza por actividad y bloque; registra presencia de tu grupo.">
+    <div class="session-bar" id="prof-session-bar" aria-label="Bloque de sesiones">
+        <button type="button" class="session-chip is-active" data-ses="1">Bloque 1</button>
+        <button type="button" class="session-chip" data-ses="2">Bloque 2</button>
+        <button type="button" class="session-chip" data-ses="3">Bloque 3</button>
+    </div>
+    <div id="prof-lista-alumnos" class="prof-alumnos-wrap"></div>
+</app-section>
 
-            <section id="panel-calificaciones" class="tab-panel" role="tabpanel" hidden data-panel="calificaciones">
-                <h2 class="section-title">Evaluación continua</h2>
-                <p class="section-desc">Registra hasta tres bloques por estudiante; el sistema calcula el promedio enviado al expediente.</p>
-                <div id="prof-lista-calificaciones" class="prof-calif-wrap"></div>
-            </section>
+            <app-section id="panel-calificaciones" panel-id="calificaciones" active="false" 
+                  title="Evaluación continua" 
+                  description="Registra hasta tres bloques por estudiante; el sistema calcula el promedio enviado al expediente.">
+    <div id="prof-lista-calificaciones" class="prof-calif-wrap"></div>
+</app-section>
         </main>
 
-        <footer class="footer footer--minimal">
-            <p>Portal docente · <span id="api-status">—</span></p>
-        </footer>
+        <app-footer role="profesor" show-api-status="true"></app-footer>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -84,6 +57,17 @@
     <script src="js/panel-utils.js"></script>
     <script src="js/sport-filter.js"></script>
     <script src="js/ui-components.js"></script>
+    <script src="js/web-components/app-header.js"></script>
+    <script src="js/web-components/app-footer.js"></script>
+    <script src="js/web-components/app-tabs.js"></script>
+    <script src="js/web-components/app-section.js"></script>
+    <script src="js/web-components/app-table.js"></script>
+    <script src="js/web-components/app-card.js"></script>
+    <script src="js/web-components/metric-card.js"></script>
+    <script src="js/web-components/form-field.js"></script>
+    <script src="js/web-components/progress-bar.js"></script>
+    <script src="js/web-components/status-badge.js"></script>
+    <script src="js/web-components/compatibility.js"></script>
     <script src="js/profesor.js"></script>
 </body>
 </html>

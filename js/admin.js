@@ -548,6 +548,22 @@ function init() {
         .getElementById("admin-duration-minutes")
         ?.addEventListener("change", refreshHourRangePreview);
 
+    // Conectar tabs con sections
+    const tabs = document.querySelector('app-tabs');
+    if (tabs) {
+        tabs.addEventListener('tab-change', (e) => {
+            const activeTab = e.detail.activeTab;
+            
+            // Actualizar app-sections
+            document.querySelectorAll('app-section[panel-id]').forEach(section => {
+                const panelId = section.getAttribute('panel-id');
+                const isActive = panelId === activeTab;
+                section.setActive(isActive);
+            });
+        });
+    }
+
+    // Inicializar tabs existente
     initTabs();
     setAdminSportRailVisible("usuarios");
     initAdminSportRail();

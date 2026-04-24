@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Web Components - Deportes Universidad</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/components.css">
+    <style>
+        body {
+            padding: 2rem;
+            background: var(--color-gray-50, #f9fafb);
+        }
+        .demo-section {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .demo-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--color-gray-900, #111827);
+        }
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="demo-title">Demo de Web Components</h1>
+        
+        <!-- Componente 1: Header -->
+        <div class="demo-section">
+            <h2 class="demo-title">1. App Header</h2>
+            <app-header role="estudiante" logo="◆" title="Portal del estudiante" subtitle="Bienestar y deporte universitario"></app-header>
+        </div>
+
+        <!-- Componente 2: Footer -->
+        <div class="demo-section">
+            <h2 class="demo-title">2. App Footer</h2>
+            <app-footer text="Portal institucional de deportes" show-api-status="true"></app-footer>
+        </div>
+
+        <!-- Componente 3: Botones -->
+        <div class="demo-section">
+            <h2 class="demo-title">3. App Button</h2>
+            <div class="demo-grid">
+                <app-button variant="primary" size="md">Botón Primario</app-button>
+                <app-button variant="ghost" size="md">Botón Ghost</app-button>
+                <app-button variant="secondary" size="sm">Botón Secundario</app-button>
+                <app-button variant="danger" size="lg" loading="true">Cargando...</app-button>
+            </div>
+        </div>
+
+        <!-- Componente 4: Flash Messages -->
+        <div class="demo-section">
+            <h2 class="demo-title">4. Flash Message</h2>
+            <div class="demo-grid">
+                <flash-message type="ok" message="Operación exitosa"></flash-message>
+                <flash-message type="err" message="Error en el proceso"></flash-message>
+                <flash-message type="info" message="Información importante"></flash-message>
+                <flash-message type="warning" message="Advertencia"></flash-message>
+            </div>
+        </div>
+
+        <!-- Componente 5: Tarjeta de Clase -->
+        <div class="demo-section">
+            <h2 class="demo-title">5. Class Card</h2>
+            <div class="demo-grid">
+                <class-card 
+                    title="Fútbol"
+                    subtitle="Clase abierta"
+                    schedule-id="1"
+                    meta-lines="Nivel: Intermedio|Lugar: Cancha principal|Día: Lunes · 16:00|Cupos: 20">
+                </class-card>
+                <class-card 
+                    title="Basketball"
+                    subtitle="Clase abierta"
+                    schedule-id="2"
+                    meta-lines="Nivel: Principiante|Lugar: Gimnasio|Día: Miércoles · 18:00|Cupos: 15">
+                </class-card>
+            </div>
+        </div>
+
+        <!-- Componente 6: Modal -->
+        <div class="demo-section">
+            <h2 class="demo-title">6. App Modal</h2>
+            <app-button variant="primary" onclick="document.getElementById('demo-modal').show()">Abrir Modal</app-button>
+            <app-modal id="demo-modal" title="Modal de Demo" size="md">
+                <p>Este es un modal de demostración. Puedes poner cualquier contenido aquí.</p>
+                <div slot="footer">
+                    <app-button variant="ghost" onclick="document.getElementById('demo-modal').close()">Cancelar</app-button>
+                    <app-button variant="primary">Aceptar</app-button>
+                </div>
+            </app-modal>
+        </div>
+
+        <!-- Componente 7: Formulario de Autenticación -->
+        <div class="demo-section">
+            <h2 class="demo-title">7. Auth Form</h2>
+            <div class="demo-grid">
+                <auth-form type="login" title="Iniciar sesión" show-roles="true"></auth-form>
+                <auth-form type="register" title="Crear cuenta" show-roles="true" show-career="true"></auth-form>
+            </div>
+        </div>
+
+        <!-- Componente 8: User Item -->
+        <div class="demo-section">
+            <h2 class="demo-title">8. User Item</h2>
+            <div class="demo-grid">
+                <user-item 
+                    variant="card"
+                    name="Juan Pérez" 
+                    role="Estudiante" 
+                    email="juan@universidad.edu" 
+                    career="Ingeniería"
+                    show-actions="true">
+                </user-item>
+                <user-item 
+                    variant="card"
+                    name="María García" 
+                    role="Profesor" 
+                    email="maria@universidad.edu"
+                    show-actions="true">
+                </user-item>
+            </div>
+        </div>
+
+        <!-- Componente 9: Tabs -->
+        <div class="demo-section">
+            <h2 class="demo-title">9. App Tabs</h2>
+            <app-tabs active-tab="tab1">
+                <div slot="tabs">
+                    <app-tab name="tab1" label="Primera pestaña"></app-tab>
+                    <app-tab name="tab2" label="Segunda pestaña"></app-tab>
+                    <app-tab name="tab3" label="Tercera pestaña"></app-tab>
+                </div>
+                <div slot="panels">
+                    <app-tab-panel name="tab1">
+                        <h3>Contenido de la primera pestaña</h3>
+                        <p>Este es el contenido que se muestra en la primera pestaña.</p>
+                    </app-tab-panel>
+                    <app-tab-panel name="tab2">
+                        <h3>Contenido de la segunda pestaña</h3>
+                        <p>Este es el contenido que se muestra en la segunda pestaña.</p>
+                    </app-tab-panel>
+                    <app-tab-panel name="tab3">
+                        <h3>Contenido de la tercera pestaña</h3>
+                        <p>Este es el contenido que se muestra en la tercera pestaña.</p>
+                    </app-tab-panel>
+                </div>
+            </app-tabs>
+        </div>
+
+        <!-- Componente 10: Data Table -->
+        <div class="demo-section">
+            <h2 class="demo-title">10. Data Table</h2>
+            <data-table id="demo-table" title="Usuarios del Sistema" show-pagination="true" rows-per-page="5"></data-table>
+        </div>
+    </div>
+
+    <!-- Cargar todos los Web Components -->
+    <script src="js/web-components/app-header.js"></script>
+    <script src="js/web-components/app-footer.js"></script>
+    <script src="js/web-components/app-button.js"></script>
+    <script src="js/web-components/flash-message.js"></script>
+    <script src="js/web-components/class-card.js"></script>
+    <script src="js/web-components/app-modal.js"></script>
+    <script src="js/web-components/auth-form.js"></script>
+    <script src="js/web-components/user-item.js"></script>
+    <script src="js/web-components/app-tabs.js"></script>
+    <script src="js/web-components/data-table.js"></script>
+
+    <script>
+        // Demo para la tabla de datos
+        document.addEventListener('DOMContentLoaded', () => {
+            const table = document.getElementById('demo-table');
+            if (table) {
+                // Definir columnas
+                table.setColumns([
+                    { key: 'name', label: 'Nombre', sortable: true },
+                    { key: 'role', label: 'Rol', sortable: true },
+                    { key: 'email', label: 'Email', sortable: true },
+                    { key: 'career', label: 'Carrera', sortable: true }
+                ]);
+
+                // Datos de ejemplo
+                const sampleData = [
+                    { name: 'Juan Pérez', role: 'Estudiante', email: 'juan@universidad.edu', career: 'Ingeniería' },
+                    { name: 'María García', role: 'Profesor', email: 'maria@universidad.edu', career: 'Educación Física' },
+                    { name: 'Carlos López', role: 'Estudiante', email: 'carlos@universidad.edu', career: 'Medicina' },
+                    { name: 'Ana Martínez', role: 'Administrador', email: 'ana@universidad.edu', career: 'Sistemas' },
+                    { name: 'Luis Rodríguez', role: 'Estudiante', email: 'luis@universidad.edu', career: 'Derecho' },
+                    { name: 'Sofía Hernández', role: 'Profesor', email: 'sofia@universidad.edu', career: 'Psicología' },
+                    { name: 'Diego Sánchez', role: 'Estudiante', email: 'diego@universidad.edu', career: 'Arquitectura' },
+                    { name: 'Laura Torres', role: 'Profesor', email: 'laura@universidad.edu', career: 'Nutrición' }
+                ];
+
+                // Cargar datos
+                table.setData(sampleData);
+            }
+
+            // Event listeners para demostración
+            document.querySelectorAll('app-button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    if (!e.target.getAttribute('loading')) {
+                        console.log('Botón clickeado:', e.target.textContent);
+                    }
+                });
+            });
+
+            document.querySelectorAll('class-card').forEach(card => {
+                card.addEventListener('detail', (e) => {
+                    console.log('Detalle de clase:', e.detail);
+                });
+                card.addEventListener('enroll', (e) => {
+                    console.log('Inscribir en clase:', e.detail);
+                });
+            });
+
+            document.querySelectorAll('user-item').forEach(item => {
+                item.addEventListener('edit', (e) => {
+                    console.log('Editar usuario:', e.detail);
+                });
+                item.addEventListener('delete', (e) => {
+                    console.log('Eliminar usuario:', e.detail);
+                });
+            });
+
+            document.querySelectorAll('auth-form').forEach(form => {
+                form.addEventListener('submit', (e) => {
+                    console.log('Formulario enviado:', e.detail);
+                });
+                form.addEventListener('role-change', (e) => {
+                    console.log('Cambio de rol:', e.detail);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

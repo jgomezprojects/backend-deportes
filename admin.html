@@ -7,211 +7,285 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="css/dashboard-styles.css">
 </head>
 <body class="body--admin">
     <div class="app app--wide">
-        <header class="header header--admin">
-            <div class="header__brand">
-                <span class="header__logo" aria-hidden="true">⚙</span>
-                <div>
-                    <p class="header__title">Administración</p>
-                    <p class="header__subtitle">Coordinación de actividad física y espacios</p>
-                </div>
-            </div>
-            <div class="header__user">
-                <span class="header__welcome">Hola <strong id="user-display-name">—</strong></span>
-                <button type="button" class="btn btn--ghost" id="btn-logout">Cerrar sesión</button>
-            </div>
-        </header>
+        <app-header role="admin"></app-header>
 
-        <nav class="tabs" role="tablist" aria-label="Secciones del panel">
-            <button type="button" class="tabs__btn is-active" role="tab" aria-selected="true" data-tab="usuarios">Usuarios</button>
-            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="horarios">Horarios</button>
-            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="reservas">Inscripciones</button>
-            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="historial">Historial académico</button>
-            <button type="button" class="tabs__btn" role="tab" aria-selected="false" data-tab="sistema">Resumen</button>
-        </nav>
+        <app-tabs active-tab="usuarios">
+            <app-tab slot="tabs" name="usuarios" label="Usuarios"></app-tab>
+            <app-tab slot="tabs" name="horarios" label="Horarios"></app-tab>
+            <app-tab slot="tabs" name="reservas" label="Inscripciones"></app-tab>
+            <app-tab slot="tabs" name="historial" label="Historial académico"></app-tab>
+            <app-tab slot="tabs" name="reportes" label="Reportes"></app-tab>
+            <app-tab slot="tabs" name="dashboard" label="Dashboard"></app-tab>
+            <app-tab slot="tabs" name="sistema" label="Resumen"></app-tab>
+            
+            <app-tab-panel slot="panels" name="usuarios"></app-tab-panel>
+            <app-tab-panel slot="panels" name="horarios"></app-tab-panel>
+            <app-tab-panel slot="panels" name="reservas"></app-tab-panel>
+            <app-tab-panel slot="panels" name="historial"></app-tab-panel>
+            <app-tab-panel slot="panels" name="reportes"></app-tab-panel>
+            <app-tab-panel slot="panels" name="dashboard"></app-tab-panel>
+            <app-tab-panel slot="panels" name="sistema"></app-tab-panel>
+        </app-tabs>
 
         <div id="admin-sport-rail-mount" class="sport-rail-mount" hidden aria-label="Filtro por deporte"></div>
 
         <main class="main">
             <p class="flash" id="flash-msg" hidden></p>
 
-            <section id="panel-usuarios" class="tab-panel is-active" role="tabpanel" data-panel="usuarios">
-                <h2 class="section-title">Directorio de usuarios</h2>
-                <p class="section-desc">Listas actualizadas por perfil (sin datos sensibles).</p>
-                <div class="kpi-band" id="admin-kpi-usuarios"></div>
+            <app-section id="panel-usuarios" panel-id="usuarios" active="true" 
+                  title="Directorio de usuarios" 
+                  description="Listas actualizadas por perfil (sin datos sensibles)." 
+                  show-kpi="true" kpi-id="admin-kpi-usuarios">
+    
+    <app-card variant="default" padding="normal">
+        <h3 class="role-block__title">Estudiantes</h3>
+        <app-table table-id="dt-admin-est" 
+                   columns="Nombre|Acciones"
+                   width="100%" nowrap="true" display="display">
+            <tbody slot="table-body" id="admin-tb-est"></tbody>
+        </app-table>
+    </app-card>
 
-                <div class="role-block">
-                    <h3 class="role-block__title">Estudiantes</h3>
-                    <div class="table-wrap">
-                        <table id="dt-admin-est" class="display nowrap" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-tb-est"></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="role-block">
-                    <h3 class="role-block__title">Docentes</h3>
-                    <div class="table-wrap">
-                        <table id="dt-admin-prof" class="display nowrap" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-tb-prof"></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="role-block">
-                    <h3 class="role-block__title">Administradores</h3>
-                    <div class="table-wrap">
-                        <table id="dt-admin-adm" class="display nowrap" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-tb-adm"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
+    <app-card variant="default" padding="normal">
+        <h3 class="role-block__title">Docentes</h3>
+        <app-table table-id="dt-admin-prof" 
+                   columns="Nombre|Acciones"
+                   width="100%" nowrap="true" display="display">
+            <tbody slot="table-body" id="admin-tb-prof"></tbody>
+        </app-table>
+    </app-card>
 
-            <section id="panel-horarios" class="tab-panel" role="tabpanel" hidden data-panel="horarios">
-                <h2 class="section-title">Programación de horarios</h2>
-                <p class="section-desc">Crea franjas y asigna docentes a cada grupo.</p>
-                <div class="card admin-create-card">
-                    <h3 class="card__title">Nueva franja</h3>
-                    <form id="admin-create-schedule-form" class="admin-form-grid">
-                        <label class="admin-form-field">
-                            <span>Deporte</span>
-                            <select id="admin-sport-id" required></select>
-                        </label>
-                        <label class="admin-form-field">
-                            <span>Instalación</span>
-                            <select id="admin-location-id" required></select>
-                        </label>
-                        <label class="admin-form-field">
-                            <span>Nivel</span>
-                            <select id="admin-level-id" required></select>
-                        </label>
-                        <label class="admin-form-field">
-                            <span>Docente (opcional)</span>
-                            <select id="admin-instructor-id"></select>
-                        </label>
-                        <label class="admin-form-field">
-                            <span>Día</span>
-                            <input id="admin-day" type="text" placeholder="Lunes" required>
-                        </label>
-                        <label class="admin-form-field">
-                            <span>Hora inicio</span>
-                            <input id="admin-hour-start" type="time" step="1800" required>
-                        </label>
-                        <label class="admin-form-field">
-                            <span>Duración</span>
-                            <select id="admin-duration-minutes" required>
-                                <option value="60">60 min</option>
-                                <option value="90" selected>90 min</option>
-                                <option value="120">120 min</option>
-                            </select>
-                        </label>
-                        <label class="admin-form-field">
-                            <span>Vista previa horario</span>
-                            <input id="admin-hour-range" type="text" readonly placeholder="18:00-19:30">
-                        </label>
-                        <label class="admin-form-field">
-                            <span>Cupos</span>
-                            <input id="admin-capacity" type="number" min="1" value="20" required>
-                        </label>
-                        <div class="admin-form-actions">
-                            <button type="submit" class="btn btn--primary" id="admin-btn-create-schedule">Publicar horario</button>
-                        </div>
-                    </form>
-                </div>
-                <div class="table-wrap">
-                    <table id="dt-admin-horarios" class="display nowrap" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th>Actividad</th>
-                                <th>Instalación</th>
-                                <th>Nivel</th>
-                                <th>Día</th>
-                                <th>Horario</th>
-                                <th>Cupos</th>
-                                <th>Docente</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-tabla-horarios-body"></tbody>
-                    </table>
-                </div>
-            </section>
+    <app-card variant="default" padding="normal">
+        <h3 class="role-block__title">Administradores</h3>
+        <app-table table-id="dt-admin-adm" 
+                   columns="Nombre|Acciones"
+                   width="100%" nowrap="true" display="display">
+            <tbody slot="table-body" id="admin-tb-adm"></tbody>
+        </app-table>
+    </app-card>
 
-            <section id="panel-reservas" class="tab-panel" role="tabpanel" hidden data-panel="reservas">
-                <h2 class="section-title">Inscripciones por actividad</h2>
-                <p class="section-desc">Matrículas activas ordenadas por deporte.</p>
-                <div class="table-wrap">
-                    <table id="dt-admin-reservas" class="display nowrap" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th>Actividad</th>
-                                <th>Participante</th>
-                                <th>Día</th>
-                                <th>Horario</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-tabla-reservas-body"></tbody>
-                    </table>
-                </div>
-            </section>
+</app-section>
 
-            <section id="panel-historial" class="tab-panel" role="tabpanel" hidden data-panel="historial">
-                <h2 class="section-title">Historial de movimientos</h2>
-                <p class="section-desc">Altas, bajas y evaluaciones registradas en el sistema.</p>
-                <div class="table-wrap">
-                    <table id="dt-admin-historial" class="display nowrap" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th>Fecha</th>
-                                <th>Participante</th>
-                                <th>Actividad</th>
-                                <th>Evento</th>
-                                <th>Detalle</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-tabla-historial-body"></tbody>
-                    </table>
-                </div>
-            </section>
+            <app-section id="panel-horarios" panel-id="horarios" active="false" 
+                  title="Programación de horarios" 
+                  description="Crea franjas y asigna docentes a cada grupo.">
+    
+    <app-card variant="create" padding="normal" title="Nueva franja">
+        <form id="admin-create-schedule-form" class="admin-form-grid">
+            <label class="admin-form-field">
+                <span>Deporte</span>
+                <select id="admin-sport-id" required></select>
+            </label>
+            <label class="admin-form-field">
+                <span>Instalación</span>
+                <select id="admin-location-id" required></select>
+            </label>
+            <label class="admin-form-field">
+                <span>Nivel</span>
+                <select id="admin-level-id" required></select>
+            </label>
+            <label class="admin-form-field">
+                <span>Docente (opcional)</span>
+                <select id="admin-instructor-id"></select>
+            </label>
+            <label class="admin-form-field">
+                <span>Día</span>
+                <input id="admin-day" type="text" placeholder="Lunes" required>
+            </label>
+            <label class="admin-form-field">
+                <span>Hora inicio</span>
+                <input id="admin-hour-start" type="time" step="1800" required>
+            </label>
+            <label class="admin-form-field">
+                <span>Duración</span>
+                <select id="admin-duration-minutes" required>
+                    <option value="60">60 min</option>
+                    <option value="90" selected>90 min</option>
+                    <option value="120">120 min</option>
+                </select>
+            </label>
+            <label class="admin-form-field">
+                <span>Vista previa horario</span>
+                <input id="admin-hour-range" type="text" readonly placeholder="18:00-19:30">
+            </label>
+            <label class="admin-form-field">
+                <span>Cupos</span>
+                <input id="admin-capacity" type="number" min="1" value="20" required>
+            </label>
+            <div class="admin-form-actions">
+                <button type="submit" class="btn btn--primary" id="admin-btn-create-schedule">Publicar horario</button>
+            </div>
+        </form>
+    </app-card>
 
-            <section id="panel-sistema" class="tab-panel" role="tabpanel" hidden data-panel="sistema">
-                <h2 class="section-title">Indicadores y tablero</h2>
-                <p class="section-desc">Resumen operativo y acceso al tablero de indicadores institucionales.</p>
-                <div id="admin-resumen" class="kpi-band"></div>
-                <div class="card" style="margin-top:1rem;">
-                    <p class="card__label">Analítica</p>
-                    <h3 class="card__title">Tablero Power BI</h3>
-                    <p class="card__meta">Consulta gráficos y métricas consolidadas en una vista dedicada.</p>
-                    <p style="margin-top:12px">
-                        <a class="btn btn--primary" href="dashboard.html">Abrir tablero de indicadores</a>
-                    </p>
-                </div>
-            </section>
+    <app-table table-id="dt-admin-horarios" 
+               columns="Actividad|Instalación|Nivel|Día|Horario|Cupos|Docente|Acciones"
+               width="100%" nowrap="true" display="display">
+        <tbody slot="table-body" id="admin-tabla-horarios-body"></tbody>
+    </app-table>
+
+</app-section>
+
+            <app-section id="panel-reservas" panel-id="reservas" active="false" 
+                  title="Inscripciones por actividad" 
+                  description="Matrículas activas ordenadas por deporte.">
+    <app-table table-id="dt-admin-reservas" 
+               columns="Actividad|Participante|Día|Horario|Acciones"
+               width="100%" nowrap="true" display="display">
+        <tbody slot="table-body" id="admin-tabla-reservas-body"></tbody>
+    </app-table>
+</app-section>
+
+            <app-section id="panel-historial" panel-id="historial" active="false" 
+                  title="Historial de movimientos" 
+                  description="Altas, bajas y evaluaciones registradas en el sistema.">
+    <app-table table-id="dt-admin-historial" 
+               columns="Fecha|Participante|Actividad|Evento|Detalle"
+               width="100%" nowrap="true" display="display">
+        <tbody slot="table-body" id="admin-tabla-historial-body"></tbody>
+    </app-table>
+</app-section>
+
+            <app-section id="panel-reportes" panel-id="reportes" active="false" 
+                  title="Generador de Reportes" 
+                  description="Genera reportes en PDF con filtros personalizados para análisis y toma de decisiones.">
+    
+    <app-card variant="default" padding="normal" title="Configurar Reporte">
+        <form id="reporte-form" class="admin-form-grid">
+            <div class="reporte-filtros">
+                <label class="admin-form-field">
+                    <span>Tipo de Reporte</span>
+                    <select id="reporte-tipo" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="usuarios">Reporte de Usuarios</option>
+                        <option value="inscripciones">Reporte de Inscripciones</option>
+                        <option value="asistencia">Reporte de Asistencia</option>
+                        <option value="rendimiento">Reporte de Rendimiento Académico</option>
+                    </select>
+                </label>
+                
+                <label class="admin-form-field">
+                    <span>Rango de Fechas</span>
+                    <input type="date" id="reporte-fecha-inicio" required>
+                </label>
+                
+                <label class="admin-form-field">
+                    <span>Fecha Fin</span>
+                    <input type="date" id="reporte-fecha-fin" required>
+                </label>
+                
+                <label class="admin-form-field">
+                    <span>Filtro por Rol</span>
+                    <select id="reporte-rol">
+                        <option value="todos">Todos los roles</option>
+                        <option value="1">Estudiantes</option>
+                        <option value="2">Profesores</option>
+                        <option value="3">Administradores</option>
+                    </select>
+                </label>
+                
+                <label class="admin-form-field">
+                    <span>Filtro por Deporte</span>
+                    <select id="reporte-deporte">
+                        <option value="todos">Todos los deportes</option>
+                        <option value="futbol">Fútbol</option>
+                        <option value="basketball">Basketball</option>
+                        <option value="voleibol">Voleibol</option>
+                        <option value="tenis">Tenis</option>
+                        <option value="natacion">Natación</option>
+                    </select>
+                </label>
+                
+                <label class="admin-form-field">
+                    <span>Formato de Salida</span>
+                    <select id="reporte-formato">
+                        <option value="pdf">PDF</option>
+                        <option value="excel">Excel</option>
+                    </select>
+                </label>
+            </div>
+            
+            <div class="admin-form-actions">
+                <button type="button" class="btn btn--primary" id="btn-generar-reporte">
+                    <span class="btn-icon">📊</span>
+                    Generar Reporte
+                </button>
+                <button type="button" class="btn btn--ghost" id="btn-vista-previa">
+                    <span class="btn-icon">👁️</span>
+                    Vista Previa
+                </button>
+            </div>
+        </form>
+    </app-card>
+
+    <div id="reporte-preview" class="reporte-preview" hidden>
+        <app-card variant="default" padding="normal" title="Vista Previa del Reporte">
+            <div id="reporte-preview-content"></div>
+            <div class="card__actions">
+                <button type="button" class="btn btn--primary" id="btn-descargar-reporte">
+                    <span class="btn-icon">⬇️</span>
+                    Descargar Reporte
+                </button>
+            </div>
+        </app-card>
+    </div>
+
+</app-section>
+
+            <app-section id="panel-dashboard" panel-id="dashboard" active="false" 
+                  title="Tablero de Indicadores Power BI" 
+                  description="Análisis avanzado de datos y métricas consolidadas en tiempo real.">
+    
+    <app-card variant="default" padding="tight" title="Dashboard Interactivo">
+        <div class="dashboard-container">
+            <iframe 
+                src="https://app.powerbi.com/view?r=eyJrIjoiZjA4NzYxZDQtMjE4Ny00YjU3LTk3NjYtODJkNjQ0NzA5ZmJiIiwidCI6IjE4ZmFkNjMzLWQ5M2QtNDY5ZC1hMzUxLWQzZjRjNGJhMjQ5ZCIsImMiOjEwfQ%3D%3D&pageName=ReportSection"
+                width="100%" 
+                height="600px" 
+                frameborder="0" 
+                allowFullScreen="true"
+                style="border: none; border-radius: 0.5rem; background: white;">
+            </iframe>
+        </div>
+        <div class="dashboard-info">
+            <p class="card__meta">
+                <strong>Nota:</strong> El dashboard se actualiza automáticamente cada 5 minutos. 
+                Utiliza los filtros interactivos para explorar los datos por período, rol o actividad deportiva.
+            </p>
+        </div>
+    </app-card>
+
+    <app-card variant="default" padding="normal" title="Métricas Rápidas">
+        <div class="metrics-grid">
+            <metric-card value="1,247" label="Usuarios Activos" change="+12.3%" change-type="positive" icon="👥" variant="success"></metric-card>
+            <metric-card value="89" label="Clases Activas" change="+5.2%" change-type="positive" icon="📚" variant="default"></metric-card>
+            <metric-card value="3,456" label="Inscripciones Totales" change="-2.1%" change-type="negative" icon="📝" variant="warning"></metric-card>
+            <metric-card value="87.3%" label="Tasa de Asistencia" change="+3.7%" change-type="positive" icon="✅" variant="success"></metric-card>
+        </div>
+    </app-card>
+
+</app-section>
+
+            <app-section id="panel-sistema" panel-id="sistema" active="false" 
+                  title="Indicadores y tablero" 
+                  description="Resumen operativo y acceso al tablero de indicadores institucionales.">
+    <div id="admin-resumen" class="kpi-band"></div>
+    <app-card variant="default" padding="normal" 
+             label="Analítica" 
+             title="Tablero Power BI" 
+             meta="Consulta gráficos y métricas consolidadas en una vista dedicada.">
+        <div class="card__actions">
+            <a class="btn btn--primary" href="dashboard.html">Abrir tablero de indicadores</a>
+        </div>
+    </app-card>
+</app-section>
         </main>
 
-        <footer class="footer footer--minimal">
-            <p>Panel de administración · <span id="api-status">—</span></p>
-        </footer>
+        <app-footer role="admin" text="Panel de administración" show-api-status="true"></app-footer>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -220,6 +294,20 @@
     <script src="js/panel-utils.js"></script>
     <script src="js/sport-filter.js"></script>
     <script src="js/ui-components.js"></script>
+    <script src="js/web-components/app-header.js"></script>
+    <script src="js/web-components/app-footer.js"></script>
+    <script src="js/web-components/app-tabs.js"></script>
+    <script src="js/web-components/app-tab.js"></script>
+    <script src="js/web-components/app-tab-panel.js"></script>
+    <script src="js/web-components/app-section.js"></script>
+    <script src="js/web-components/app-table.js"></script>
+    <script src="js/web-components/app-card.js"></script>
+    <script src="js/web-components/metric-card.js"></script>
+    <script src="js/web-components/form-field.js"></script>
+    <script src="js/web-components/progress-bar.js"></script>
+    <script src="js/web-components/status-badge.js"></script>
+    <script src="js/web-components/compatibility.js"></script>
+    <script src="js/report-generator.js"></script>
     <script src="js/admin.js"></script>
 </body>
 </html>
